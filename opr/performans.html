@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Performans ve KPI Takip Portalı</title>
+  <!-- Chart.js ve DataLabels Eklentisi -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-red-dark: #b8030e;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1400px; margin: 0 auto; display: none; } /* Oturum kontrolüne kadar gizli */
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .nav-home {
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      text-decoration: none;
+      color: var(--aras-dark);
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+    }
+    .nav-home:hover { background-color: var(--aras-red); color: white; }
+
+    .user-info-bar {
+      position: absolute;
+      right: 15px;
+      top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--aras-dark);
+    }
+
+    header h1 { font-size: 1.4rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 6px; margin-top: 10px; }
+    header h1 span { color: var(--aras-red); }
+    
+    .status-bar {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Controls & Search */
+    .controls-container { display: flex; flex-direction: column; gap: 12px; max-width: 1200px; margin: 0 auto 20px auto; }
+    .search-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .search-input { flex: 1; min-width: 220px; padding: 12px 18px; border: 2px solid var(--border-color); border-radius: 25px; font-size: 0.95rem; }
+    .search-input:focus { outline: none; border-color: var(--aras-red); }
+
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 16px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    /* Grid Layout */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+    .no-result { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; font-size: 1rem; }
+
+    /* Kart Tasarımı */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 4px solid var(--aras-red);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--aras-dark); text-transform: uppercase; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; }
+
+    .kpi-row-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
+    .mini-kpi {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .mini-kpi-title { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    .mini-kpi-val { font-size: 1.3rem; font-weight: 800; color: var(--aras-dark); margin-top: 2px; }
+    
+    .target-status {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .status-above { background: #dcfce7; color: #15803d; }
+    .status-below { background: #fee2e2; color: #b91c1c; }
+
+    .btn-scorecard {
+      background: var(--aras-dark);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn-scorecard:hover { background: var(--aras-red); }
+
+    /* MODALLAR */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+    .modal-content { background: white; padding: 22px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 680px; position: relative; max-height: 92vh; overflow-y: auto; }
+    .modal-large { max-width: 96vw !important; width: 96vw !important; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; z-index: 10; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; color: var(--aras-dark); }
+    .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; }
+
+    .kpi-import-box {
+      background: #fafafa;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .kpi-import-box label { font-size: 0.82rem; font-weight: 700; color: var(--aras-dark); display: block; margin-bottom: 4px; }
+    .kpi-import-box textarea { width: 100%; height: 70px; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.8rem; font-family: monospace; resize: vertical; }
+
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+    .report-table th, .report-table td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: center; }
+    .report-table th { background-color: #f8fafc; font-weight: 700; color: var(--aras-dark); }
+
+    .status-badge-ok { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .status-badge-miss { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+    .chart-wrapper-responsive { width: 100%; height: 500px; position: relative; margin-top: 10px; }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header { padding-top: 50px; }
+      .nav-home { top: 10px; left: 10px; }
+      .user-info-bar { top: 10px; right: 10px; }
+      .grid-container { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .search-row { flex-direction: column; }
+      .btn-action { width: 100%; }
+      .chart-wrapper-responsive { height: 380px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="mainContainer">
+    <header>
+      <a href="index.html" class="nav-home">🏠 Ana Menü</a>
+      <div class="user-info-bar">
+        <span>👤 <span id="activeUserDisplay">-</span></span>
+      </div>
+      <h1><span>ŞUBE</span> PERFORMANS VE KPI TAKİP PORTALI</h1>
+      <div class="status-bar" id="statusText">Bulut Veritabanına Bağlanılıyor...</div>
+    </header>
+
+    <div class="controls-container">
+      <div class="search-row">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Şube adı yazarak arayın..." oninput="applySearch()">
+        <button class="btn-action admin-only" onclick="openTargetModal()">⚙ KPI Hedefleri</button>
+        <button class="btn-action admin-only" onclick="openImportModal()">📅 Veri Girişi</button>
+        <button class="btn-action" style="background:#2563eb;" onclick="openKpiReportModal()">📊 KPI Giriş Raporu</button>
+        <button class="btn-action" style="background:var(--aras-red);" onclick="openAllUnitsChartModal()">📈 Bütün Birim Grafiği</button>
+      </div>
+    </div>
+
+    <div class="grid-container" id="subeContainer"></div>
+  </div>
+
+  <!-- 1. ŞUBE BAZLI KPI HEDEFLERİ MODALI -->
+  <div class="modal" id="targetModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('targetModal')">&times;</span>
+      <h3 class="modal-title">⚙️ Şube Bazlı KPI Hedeflerini Yönet</h3>
+      
+      <div class="form-group" style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:15px;">
+        <label for="targetSubeSelect" style="color:var(--aras-red); font-size:0.9rem;">Hedefini Düzenleyeceğiniz Şubeyi Seçin:</label>
+        <select id="targetSubeSelect" onchange="onTargetSubeChange()">
+          <!-- JS dolduracak -->
+        </select>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="targetZTP">Hedef ZTP (%) [Zamanında Teslim]:</label>
+          <input type="number" id="targetZTP" value="95">
+        </div>
+        <div class="form-group">
+          <label for="targetSEK">Hedef SEK (%) [Sorunsuz Teslim]:</label>
+          <input type="number" id="targetSEK" value="98">
+        </div>
+        <div class="form-group">
+          <label for="targetIade">Hedef İade Kargo Oranı (% Max):</label>
+          <input type="number" id="targetIade" value="2.5">
+        </div>
+        <div class="form-group">
+          <label for="targetCozum">Hedef Çözüm Oranı (%):</label>
+          <input type="number" id="targetCozum" value="90">
+        </div>
+        <div class="form-group">
+          <label for="targetSikayet">Hedef Şikayet İrsaliye (Max):</label>
+          <input type="number" id="targetSikayet" value="5">
+        </div>
+        <div class="form-group">
+          <label for="targetCagri">Hedef Çağrı Cevaplama (%):</label>
+          <input type="number" id="targetCagri" value="92">
+        </div>
+        <div class="form-group">
+          <label for="targetDevir">Hedef Gecikmiş Devir (Max Adet):</label>
+          <input type="number" id="targetDevir" value="20">
+        </div>
+      </div>
+
+      <button class="btn-action" style="width:100%; margin-top:10px; border-radius:6px;" onclick="saveSelectedSubeTarget()">Seçili Şube Hedefini Kaydet</button>
+
+      <hr style="margin:18px 0; border:none; border-top:1px dashed #cbd5e1;">
+
+      <div class="kpi-import-box">
+        <label><b>Alternatif:</b> Tüm Şube Hedeflerini Excel'den Toplu Yapıştırın:</label>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:4px;">Format: <b>Şube [TAB] ZTP [TAB] Devir [TAB] SEK [TAB] İade [TAB] Çözüm [TAB] Şikayet [TAB] Çağrı</b></p>
+        <textarea id="pasteBulkTargets" placeholder="GİRESUN	96	10	98	1.5	92	2	95&#10;BULANCAK	92	30	94	3.0	85	6	88"></textarea>
+        <button class="btn-action" style="width:100%; margin-top:6px; background:#0284c7; border-radius:4px;" onclick="saveBulkTargets()">Toplu Hedefleri Excel'den Yükle</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. Veri Girişi Modalı -->
+  <div class="modal" id="importModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('importModal')">&times;</span>
+      <h3 class="modal-title">📅 Ayrı KPI Yapıştırma Alanı</h3>
+      
+      <div class="form-group">
+        <label for="dataDate">Veri Giriş Tarihi Seçin:</label>
+        <input type="date" id="dataDate">
+      </div>
+
+      <p style="font-size:0.82rem; color:#666; margin-bottom:12px;">
+        Her metriğin Excel tablosunu kendi kutusuna yapıştırabilirsiniz. Format: <b>Şube Adı [TAB] Değer</b> (Örn: GİRESUN 95.5)
+      </p>
+
+      <div class="kpi-import-box">
+        <label>1. ZTP (Teslimat Performansı %):</label>
+        <textarea id="pasteZTP" placeholder="GİRESUN	95.5&#10;BULANCAK	92.0"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>2. Gecikmiş Devir (Adet):</label>
+        <textarea id="pasteDevir" placeholder="GİRESUN	12&#10;BULANCAK	35"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>3. SEK (Sorunsuz Teslim %):</label>
+        <textarea id="pasteSEK" placeholder="GİRESUN	98.2&#10;BULANCAK	94.1"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>4. İade Kargo Oranı (%):</label>
+        <textarea id="pasteIade" placeholder="GİRESUN	1.2&#10;BULANCAK	2.8"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>5. Çözüm Oranı (%):</label>
+        <textarea id="pasteCozum" placeholder="GİRESUN	92.0&#10;BULANCAK	85.0"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>6. Şikayet İrsaliye Adedi:</label>
+        <textarea id="pasteSikayet" placeholder="GİRESUN	2&#10;BULANCAK	6"></textarea>
+      </div>
+
+      <div class="kpi-import-box">
+        <label>7. Çağrı Cevaplama Oranı (%):</label>
+        <textarea id="pasteCagri" placeholder="GİRESUN	95.0&#10;BULANCAK	88.0"></textarea>
+      </div>
+
+      <button class="btn-action" style="width:100%; margin-top:10px; border-radius:6px;" onclick="saveDailyData()">Tüm Yapıştırılan Verileri Kaydet ve Gönder</button>
+    </div>
+  </div>
+
+  <!-- 3. KPI RAPOR MODALI -->
+  <div class="modal" id="kpiReportModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('kpiReportModal')">&times;</span>
+      <h3 class="modal-title">📊 Son 30 Günün KPI Giriş Takip Raporu</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:10px;">Aşağıdaki tabloda son 30 gün içinde hangi tarihte hangi KPI verisinin sisteme girilip girilmediği raporlanmaktadır:</p>
+      
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">TARİH</th>
+            <th>ZTP (%)</th>
+            <th>DEVİR (Adet)</th>
+            <th>SEK (%)</th>
+            <th>İADE (%)</th>
+            <th>ÇÖZÜM (%)</th>
+            <th>ŞİKAYET</th>
+            <th>ÇAĞRI (%)</th>
+          </tr>
+        </thead>
+        <tbody id="kpiReportTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Şube Scorecard & KPI Rapor Modalı -->
+  <div class="modal" id="scorecardModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('scorecardModal')">&times;</span>
+      <h3 class="modal-title" id="scorecardTitle">Şube Scorecard ve Raporu</h3>
+      
+      <div style="height:320px; position:relative; margin-bottom:15px;">
+        <canvas id="scorecardChart"></canvas>
+      </div>
+
+      <h4 style="font-size:0.95rem; color:var(--aras-dark); margin-bottom:8px;" id="monthSummaryTitle">📊 Bu Ayın KPI Performans Özet Tablosu</h4>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>KPI METRİĞİ</th>
+            <th>ŞUBE HEDEFİ</th>
+            <th>GERÇEKLEŞEN ORTALAMA</th>
+            <th>HEDEF SAPMA DURUMU</th>
+          </tr>
+        </thead>
+        <tbody id="reportTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. Bütün Birim Performansı Modalı -->
+  <div class="modal" id="allUnitsModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('allUnitsModal')">&times;</span>
+      <h3 class="modal-title">📈 Bütün Birimlerin Güncel Performans & Devir Grafiği</h3>
+      
+      <div class="chart-wrapper-responsive">
+        <canvas id="allUnitsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+
+    const JSONBIN_BIN_ID = '6abc3cd1ffd5d160533d0b84';
+    const JSONBIN_MASTER_KEY = '$2a$10$tt.AspNWew11WXRrZC0KBO37XaWoZIoiEGLRUVqAu.a4qCugcEDiG';
+
+    let currentUser = null;
+
+    const defaultSubeler = [
+      "BULANCAK", "GÜRCÜKAPI", "GİRESUN", "ERZİNCAN", "RİZE", "HOPA", "OF", 
+      "ÇAYELİ", "AKÇAABAT", "VAKFİKEBİR", "SERHAT", "ARTVİN", "TİREBOLU", 
+      "SARIKAMIŞ", "BAYBURT", "GÜMÜŞHANE", "SEMERCİLER", "ŞÜKRÜPAŞA", 
+      "ONDÖRTKASIM", "AĞRI", "DOĞUBEYAZIT", "ARDAHAN", "SÜRMENE", "YONCALIK", 
+      "KAĞIZMAN", "PAZAR", "AVNİAKER", "HORASAN", "PATNOS", "OLTU", 
+      "SELİM", "MALAZGİRT", "ARSİN", "KELKİT", "PALANDÖKEN", "ARDEŞEN", 
+      "HINIS", "KAFKAS", "GÖKKUŞAĞI"
+    ];
+
+    const defaultTargetTemplate = { ztp: 95, devir: 20, sek: 98, iade: 2.5, cozum: 90, sikayet: 5, cagri: 92 };
+
+    let globalPerfData = {
+      subeTargets: {},
+      records: {}
+    };
+
+    let scorecardChartObj = null;
+    let allUnitsChartObj = null;
+
+    // OTURUM DOĞRULAMA KONTROLÜ
+    function checkUserAuth() {
+      const activeUser = JSON.parse(sessionStorage.getItem('activeUser'));
+      if (!activeUser) {
+        alert("Bu sayfaya erişmek için önce sisteme giriş yapmalısınız!");
+        window.location.href = "index.html";
+        return false;
+      }
+      currentUser = activeUser;
+      document.getElementById('activeUserDisplay').innerText = `${currentUser.name}`;
+      document.getElementById('mainContainer').style.display = 'block';
+
+      if (currentUser.role !== 'ADMIN') {
+        document.querySelectorAll('.admin-only').forEach(btn => btn.style.display = 'none');
+      }
+      return true;
+    }
+
+    window.onload = () => {
+      if (!checkUserAuth()) return;
+
+      document.getElementById('dataDate').valueAsDate = new Date();
+      defaultSubeler.sort((a, b) => a.localeCompare(b, 'tr'));
+
+      populateSubeSelectDropdown();
+
+      if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID.includes('PERFORMANS_')) {
+        document.getElementById('statusText').innerText = "Lütfen koda yeni JSONBin Bin ID bilginizi ekleyin!";
+        renderCards(defaultSubeler);
+        return;
+      }
+      loadFromCloud();
+    };
+
+    function populateSubeSelectDropdown() {
+      const select = document.getElementById('targetSubeSelect');
+      select.innerHTML = '<option value="DEFAULT">-- Varsayılan (Tüm Şubeler İçin Standart) --</option>';
+      defaultSubeler.forEach(s => {
+        select.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+    }
+
+    // EN SON VERİ GİRİŞ TARİHİNİ HESAPLAMA VE DURUM ÇUBUĞUNU GÜNCELLEME
+    function updateLatestDataDateStatus() {
+      const dates = Object.keys(globalPerfData.records || {}).sort().reverse();
+      const statusText = document.getElementById('statusText');
+
+      if (dates.length > 0) {
+        const latestStr = dates[0]; // "YYYY-MM-DD"
+        const p = latestStr.split('-');
+        const formattedDate = `${p[2]}.${p[1]}.${p[0]}`;
+        statusText.innerText = `✅ Canlı Bağlantı | 📅 En Son Veri Giriş Tarihi: ${formattedDate}`;
+      } else {
+        statusText.innerText = "✅ Canlı Bağlantı | Henüz veri girilmemiş.";
+      }
+    }
+
+    function loadFromCloud() {
+      document.getElementById('statusText').innerText = "Buluttan veriler çekiliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && typeof data.record === 'object') {
+          globalPerfData = data.record;
+          if (!globalPerfData.subeTargets) globalPerfData.subeTargets = {};
+          if (!globalPerfData.records) globalPerfData.records = {};
+
+          updateLatestDataDateStatus();
+        }
+        onTargetSubeChange();
+        applySearch();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Buluta bağlanılamadı!";
+        applySearch();
+      });
+    }
+
+    function saveToCloud() {
+      document.getElementById('statusText').innerText = "⏳ Buluta kaydediliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_MASTER_KEY
+        },
+        body: JSON.stringify(globalPerfData)
+      })
+      .then(res => res.json())
+      .then(() => {
+        updateLatestDataDateStatus();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Kaydedilirken hata oluştu!";
+      });
+    }
+
+    function getSubeTarget(subeName) {
+      if (globalPerfData.subeTargets && globalPerfData.subeTargets[subeName]) {
+        return globalPerfData.subeTargets[subeName];
+      }
+      if (globalPerfData.subeTargets && globalPerfData.subeTargets['DEFAULT']) {
+        return globalPerfData.subeTargets['DEFAULT'];
+      }
+      return defaultTargetTemplate;
+    }
+
+    function onTargetSubeChange() {
+      const selectedSube = document.getElementById('targetSubeSelect').value;
+      const t = getSubeTarget(selectedSube);
+
+      document.getElementById('targetZTP').value = t.ztp !== undefined ? t.ztp : 95;
+      document.getElementById('targetDevir').value = t.devir !== undefined ? t.devir : 20;
+      document.getElementById('targetSEK').value = t.sek !== undefined ? t.sek : 98;
+      document.getElementById('targetIade').value = t.iade !== undefined ? t.iade : 2.5;
+      document.getElementById('targetCozum').value = t.cozum !== undefined ? t.cozum : 90;
+      document.getElementById('targetSikayet').value = t.sikayet !== undefined ? t.sikayet : 5;
+      document.getElementById('targetCagri').value = t.cagri !== undefined ? t.cagri : 92;
+    }
+
+    function saveSelectedSubeTarget() {
+      if (currentUser?.role !== 'ADMIN') { alert("Yetkiniz bulunmamaktadır."); return; }
+      const selectedSube = document.getElementById('targetSubeSelect').value;
+
+      if (!globalPerfData.subeTargets) globalPerfData.subeTargets = {};
+
+      globalPerfData.subeTargets[selectedSube] = {
+        ztp: parseFloat(document.getElementById('targetZTP').value) || 95,
+        devir: parseFloat(document.getElementById('targetDevir').value) || 20,
+        sek: parseFloat(document.getElementById('targetSEK').value) || 98,
+        iade: parseFloat(document.getElementById('targetIade').value) || 2.5,
+        cozum: parseFloat(document.getElementById('targetCozum').value) || 90,
+        sikayet: parseFloat(document.getElementById('targetSikayet').value) || 5,
+        cagri: parseFloat(document.getElementById('targetCagri').value) || 92
+      };
+
+      saveToCloud();
+      applySearch();
+      closeModal('targetModal');
+      alert(`✅ ${selectedSube === 'DEFAULT' ? 'Varsayılan Şablon' : selectedSube} için özel KPI hedefleri kaydedildi!`);
+    }
+
+    function saveBulkTargets() {
+      if (currentUser?.role !== 'ADMIN') { alert("Yetkiniz bulunmamaktadır."); return; }
+      const text = document.getElementById('pasteBulkTargets').value.trim();
+      if (!text) { alert("Lütfen toplu hedef verisini yapıştırın!"); return; }
+
+      const lines = text.split('\n');
+      let count = 0;
+
+      if (!globalPerfData.subeTargets) globalPerfData.subeTargets = {};
+
+      lines.forEach(line => {
+        const parts = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+        if (parts.length >= 2) {
+          const sube = parts[0].trim().toUpperCase();
+          if (sube) {
+            globalPerfData.subeTargets[sube] = {
+              ztp: parseFloat(parts[1]?.replace(',', '.')) || 95,
+              devir: parseInt(parts[2]?.trim()) || 20,
+              sek: parseFloat(parts[3]?.replace(',', '.')) || 98,
+              iade: parseFloat(parts[4]?.replace(',', '.')) || 2.5,
+              cozum: parseFloat(parts[5]?.replace(',', '.')) || 90,
+              sikayet: parseInt(parts[6]?.trim()) || 5,
+              cagri: parseFloat(parts[7]?.replace(',', '.')) || 92
+            };
+            count++;
+          }
+        }
+      });
+
+      if (count > 0) {
+        saveToCloud();
+        applySearch();
+        closeModal('targetModal');
+        alert(`✅ Toplam ${count} şubenin hedefleri Excel'den başarıyla güncellendi!`);
+      }
+    }
+
+    // SADECE EN SON GİRİLEN VERİYİ ALAN FONKSİYON
+    function getLatestDataForSube(subeName) {
+      const dates = Object.keys(globalPerfData.records || {}).sort().reverse();
+      for (let d of dates) {
+        if (globalPerfData.records[d] && globalPerfData.records[d][subeName]) {
+          return { date: d, ...globalPerfData.records[d][subeName] };
+        }
+      }
+      return null;
+    }
+
+    function renderCards(subeList) {
+      const container = document.getElementById('subeContainer');
+      container.innerHTML = '';
+
+      if (subeList.length === 0) {
+        container.innerHTML = '<div class="no-result">Aramanızla eşleşen şube bulunamadı.</div>';
+        return;
+      }
+
+      subeList.forEach(sube => {
+        const latest = getLatestDataForSube(sube);
+        const subeTarget = getSubeTarget(sube);
+
+        const ztpVal = latest ? latest.ztp : null;
+        const devirVal = latest ? latest.devir : null;
+
+        let ztpStatusHtml = '<span class="target-status" style="background:#e2e8f0; color:#475569;">Veri Yok</span>';
+        if (ztpVal !== null && ztpVal !== undefined) {
+          const diff = (ztpVal - subeTarget.ztp).toFixed(1);
+          if (diff >= 0) ztpStatusHtml = `<span class="target-status status-above">🟢 Hedefin (%${subeTarget.ztp}) +%${diff} Üstünde</span>`;
+          else ztpStatusHtml = `<span class="target-status status-below">🔴 Hedefin (%${subeTarget.ztp}) -%${Math.abs(diff)} Gerisinde</span>`;
+        }
+
+        let devirStatusHtml = '<span class="target-status" style="background:#e2e8f0; color:#475569;">Veri Yok</span>';
+        if (devirVal !== null && devirVal !== undefined) {
+          const diff = devirVal - subeTarget.devir;
+          if (diff <= 0) devirStatusHtml = `<span class="target-status status-above">🟢 Hedefin (${subeTarget.devir}) ${Math.abs(diff)} Adet Altında</span>`;
+          else devirStatusHtml = `<span class="target-status status-below">🔴 Hedefin (${subeTarget.devir}) ${diff} Adet Üstünde</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-title">${sube}</div>
+          <div class="kpi-row-group">
+            <div class="mini-kpi">
+              <div class="mini-kpi-title">ZTP (Son Veri %)</div>
+              <div class="mini-kpi-val">${ztpVal !== null && ztpVal !== undefined ? '%' + ztpVal : '-'}</div>
+              ${ztpStatusHtml}
+            </div>
+            <div class="mini-kpi">
+              <div class="mini-kpi-title">Gecikmiş Devir (Son Veri)</div>
+              <div class="mini-kpi-val">${devirVal !== null && devirVal !== undefined ? devirVal + ' Adet' : '-'}</div>
+              ${devirStatusHtml}
+            </div>
+          </div>
+          <button class="btn-scorecard" onclick="openScorecardModal('${sube}')">📊 Scorecard & Rapor Göster</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function applySearch() {
+      const q = document.getElementById('searchInput').value.toLocaleLowerCase('tr').trim();
+      const filtered = defaultSubeler.filter(s => s.toLocaleLowerCase('tr').includes(q));
+      renderCards(filtered);
+    }
+
+    function parseKpiText(text, isFloat = true) {
+      const result = {};
+      if (!text) return result;
+
+      const lines = text.trim().split('\n');
+      lines.forEach(line => {
+        const parts = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+        if (parts.length >= 2) {
+          const sube = parts[0].trim().toUpperCase();
+          const valStr = parts[1].trim().replace(',', '.');
+          const val = isFloat ? parseFloat(valStr) : parseInt(valStr);
+          if (sube && !isNaN(val)) {
+            result[sube] = val;
+          }
+        }
+      });
+      return result;
+    }
+
+    function saveDailyData() {
+      if (currentUser?.role !== 'ADMIN') { alert("Yetkiniz bulunmamaktadır."); return; }
+      const dateVal = document.getElementById('dataDate').value;
+      if (!dateVal) { alert("Lütfen tarih seçin!"); return; }
+
+      const ztpMap = parseKpiText(document.getElementById('pasteZTP').value, true);
+      const devirMap = parseKpiText(document.getElementById('pasteDevir').value, false);
+      const sekMap = parseKpiText(document.getElementById('pasteSEK').value, true);
+      const iadeMap = parseKpiText(document.getElementById('pasteIade').value, true);
+      const cozumMap = parseKpiText(document.getElementById('pasteCozum').value, true);
+      const sikayetMap = parseKpiText(document.getElementById('pasteSikayet').value, false);
+      const cagriMap = parseKpiText(document.getElementById('pasteCagri').value, true);
+
+      const allSubeler = new Set([
+        ...Object.keys(ztpMap), ...Object.keys(devirMap), ...Object.keys(sekMap),
+        ...Object.keys(iadeMap), ...Object.keys(cozumMap), ...Object.keys(sikayetMap), ...Object.keys(cagriMap)
+      ]);
+
+      if (allSubeler.size === 0) {
+        alert("Lütfen en az bir kutuya veri yapıştırın!");
+        return;
+      }
+
+      if (!globalPerfData.records[dateVal]) globalPerfData.records[dateVal] = {};
+
+      allSubeler.forEach(sube => {
+        if (!globalPerfData.records[dateVal][sube]) {
+          globalPerfData.records[dateVal][sube] = {};
+        }
+
+        if (ztpMap[sube] !== undefined) globalPerfData.records[dateVal][sube].ztp = ztpMap[sube];
+        if (devirMap[sube] !== undefined) globalPerfData.records[dateVal][sube].devir = devirMap[sube];
+        if (sekMap[sube] !== undefined) globalPerfData.records[dateVal][sube].sek = sekMap[sube];
+        if (iadeMap[sube] !== undefined) globalPerfData.records[dateVal][sube].iade = iadeMap[sube];
+        if (cozumMap[sube] !== undefined) globalPerfData.records[dateVal][sube].cozum = cozumMap[sube];
+        if (sikayetMap[sube] !== undefined) globalPerfData.records[dateVal][sube].sikayet = sikayetMap[sube];
+        if (cagriMap[sube] !== undefined) globalPerfData.records[dateVal][sube].cagri = cagriMap[sube];
+      });
+
+      saveToCloud();
+      applySearch();
+      closeModal('importModal');
+      
+      document.querySelectorAll('.kpi-import-box textarea').forEach(t => t.value = '');
+      alert(`✅ ${dateVal} tarihi için ${allSubeler.size} şubenin verileri kaydedildi!`);
+    }
+
+    function openKpiReportModal() {
+      const tbody = document.getElementById('kpiReportTableBody');
+      tbody.innerHTML = '';
+
+      const records = globalPerfData.records || {};
+      const today = new Date();
+
+      for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dStr = d.toISOString().split('T')[0];
+
+        const dayRecs = records[dStr] || {};
+        const subeler = Object.keys(dayRecs);
+
+        let ztpCount = 0, devirCount = 0, sekCount = 0, iadeCount = 0, cozumCount = 0, sikayetCount = 0, cagriCount = 0;
+
+        subeler.forEach(s => {
+          if (dayRecs[s].ztp !== undefined) ztpCount++;
+          if (dayRecs[s].devir !== undefined) devirCount++;
+          if (dayRecs[s].sek !== undefined) sekCount++;
+          if (dayRecs[s].iade !== undefined) iadeCount++;
+          if (dayRecs[s].cozum !== undefined) cozumCount++;
+          if (dayRecs[s].sikayet !== undefined) sikayetCount++;
+          if (dayRecs[s].cagri !== undefined) cagriCount++;
+        });
+
+        const makeBadge = (count) => count > 0 ? `<span class="status-badge-ok">✅ Girildi (${count})</span>` : `<span class="status-badge-miss">❌ Eksik</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:left; font-weight:700;">📅 ${dStr}</td>
+          <td>${makeBadge(ztpCount)}</td>
+          <td>${makeBadge(devirCount)}</td>
+          <td>${makeBadge(sekCount)}</td>
+          <td>${makeBadge(iadeCount)}</td>
+          <td>${makeBadge(cozumCount)}</td>
+          <td>${makeBadge(sikayetCount)}</td>
+          <td>${makeBadge(cagriCount)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById('kpiReportModal').style.display = 'flex';
+    }
+
+    // SCORECARD MODALI - SADECE İÇİNDE BULUNULAN AYIN VERİLERİNİ HESAPLAR
+    function openScorecardModal(subeName) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-11
+      const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+      document.getElementById('scorecardTitle').innerText = `${subeName} - ${monthNames[currentMonth]} ${currentYear} Scorecard Raporu`;
+      document.getElementById('monthSummaryTitle').innerText = `📊 ${monthNames[currentMonth]} ${currentYear} Ay İçi KPI Performans Özet Tablosu`;
+      document.getElementById('scorecardModal').style.display = 'flex';
+
+      const sortedDates = Object.keys(globalPerfData.records || {}).sort();
+      const labels = [], ztpList = [], devirList = [];
+      let totals = { ztp:0, devir:0, sek:0, iade:0, cozum:0, sikayet:0, cagri:0 };
+      let counts = { ztp:0, devir:0, sek:0, iade:0, cozum:0, sikayet:0, cagri:0 };
+
+      sortedDates.forEach(d => {
+        const recDate = new Date(d);
+        // SADECE İÇİNDE BULUNULAN AY VE YILA AİT VERİLERİ SÜZ
+        if (recDate.getFullYear() === currentYear && recDate.getMonth() === currentMonth) {
+          if (globalPerfData.records[d] && globalPerfData.records[d][subeName]) {
+            const rec = globalPerfData.records[d][subeName];
+            labels.push(d);
+
+            if (rec.ztp !== undefined) { ztpList.push(rec.ztp); totals.ztp += rec.ztp; counts.ztp++; } else { ztpList.push(null); }
+            if (rec.devir !== undefined) { devirList.push(rec.devir); totals.devir += rec.devir; counts.devir++; } else { devirList.push(null); }
+            
+            if (rec.sek !== undefined) { totals.sek += rec.sek; counts.sek++; }
+            if (rec.iade !== undefined) { totals.iade += rec.iade; counts.iade++; }
+            if (rec.cozum !== undefined) { totals.cozum += rec.cozum; counts.cozum++; }
+            if (rec.sikayet !== undefined) { totals.sikayet += rec.sikayet; counts.sikayet++; }
+            if (rec.cagri !== undefined) { totals.cagri += rec.cagri; counts.cagri++; }
+          }
+        }
+      });
+
+      const targets = getSubeTarget(subeName);
+
+      const tbody = document.getElementById('reportTableBody');
+      tbody.innerHTML = '';
+
+      const metrics = [
+        { name: 'ZTP (Teslimat Perf. %)', key: 'ztp', target: targets.ztp, unit: '%', lowerIsBetter: false },
+        { name: 'Gecikmiş Devir (Adet)', key: 'devir', target: targets.devir, unit: 'Adet', lowerIsBetter: true },
+        { name: 'SEK (Sorunsuz Teslim %)', key: 'sek', target: targets.sek, unit: '%', lowerIsBetter: false },
+        { name: 'İade Kargo Oranı (%)', key: 'iade', target: targets.iade, unit: '%', lowerIsBetter: true },
+        { name: 'Çözüm Oranı (%)', key: 'cozum', target: targets.cozum, unit: '%', lowerIsBetter: false },
+        { name: 'Şikayet İrsaliye Adedi', key: 'sikayet', target: targets.sikayet, unit: 'Adet', lowerIsBetter: true },
+        { name: 'Çağrı Cevaplama (%)', key: 'cagri', target: targets.cagri, unit: '%', lowerIsBetter: false }
+      ];
+
+      metrics.forEach(m => {
+        const c = counts[m.key];
+        const avg = c > 0 ? (totals[m.key] / c).toFixed(1) : null;
+        
+        let isSuccess = false;
+        if (avg !== null) {
+          if (m.lowerIsBetter) isSuccess = parseFloat(avg) <= m.target;
+          else isSuccess = parseFloat(avg) >= m.target;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:left; font-weight:700;">${m.name}</td>
+          <td>${m.target} ${m.unit}</td>
+          <td><b>${avg !== null ? avg + ' ' + m.unit : 'Veri Yok'}</b></td>
+          <td style="font-weight:700; color:${avg === null ? '#64748b' : (isSuccess ? '#15803d' : '#b91c1c')};">
+            ${avg === null ? 'VERİ GİRİLMEDİ' : (isSuccess ? '🟢 HEDEFE ULAŞILDI' : '🔴 HEDEF ALTINDA')}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const ctx = document.getElementById('scorecardChart').getContext('2d');
+      if (scorecardChartObj) scorecardChartObj.destroy();
+
+      scorecardChartObj = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { 
+              label: 'ZTP Gerçekleşen (%)', 
+              data: ztpList, 
+              borderColor: '#16a34a', 
+              backgroundColor: '#16a34a',
+              yAxisID: 'yPerf', 
+              tension: 0.3,
+              datalabels: {
+                align: 'top',
+                color: '#15803d',
+                font: { weight: 'bold', size: 10 },
+                formatter: (val) => val !== null ? '%' + val : ''
+              }
+            },
+            { 
+              label: `Şube ZTP Hedefi (%${targets.ztp})`, 
+              data: Array(labels.length).fill(targets.ztp), 
+              borderColor: '#16a34a', 
+              borderDash: [5, 5], 
+              pointRadius: 0, 
+              yAxisID: 'yPerf',
+              datalabels: { display: false }
+            },
+            { 
+              label: 'Gecikmiş Devir (Adet)', 
+              data: devirList, 
+              borderColor: '#dc2626', 
+              backgroundColor: '#dc2626',
+              yAxisID: 'yDevir', 
+              tension: 0.3,
+              datalabels: {
+                align: 'bottom',
+                color: '#b91c1c',
+                font: { weight: 'bold', size: 10 },
+                formatter: (val) => val !== null ? val + ' Adet' : ''
+              }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { datalabels: { display: true, clip: false } },
+          scales: {
+            yPerf: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: 'ZTP (%)' } },
+            yDevir: { type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Devir Adedi' } }
+          }
+        }
+      });
+    }
+
+    // BÜTÜN BİRİM GRAFİĞİ (SADECE İÇİNDE BULUNULAN AYIN VERİLERİNİ HESAPLAR)
+    function openAllUnitsChartModal() {
+      document.getElementById('allUnitsModal').style.display = 'flex';
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+      
+      const modalTitle = document.querySelector('#allUnitsModal .modal-title');
+      if (modalTitle) {
+        modalTitle.innerText = `📈 ${monthNames[currentMonth]} ${currentYear} - Bütün Birimlerin Aylık Performans Grafiği`;
+      }
+
+      const labels = [];
+      const ztpData = [];
+      const devirData = [];
+      const sekData = [];
+      const iadeData = [];
+
+      defaultSubeler.forEach(sName => {
+        labels.push(sName);
+
+        let totals = { ztp: 0, devir: 0, sek: 0, iade: 0 };
+        let counts = { ztp: 0, devir: 0, sek: 0, iade: 0 };
+
+        Object.keys(globalPerfData.records || {}).forEach(dateStr => {
+          const recDate = new Date(dateStr);
+          if (recDate.getFullYear() === currentYear && recDate.getMonth() === currentMonth) {
+            if (globalPerfData.records[dateStr] && globalPerfData.records[dateStr][sName]) {
+              const rec = globalPerfData.records[dateStr][sName];
+              if (rec.ztp !== undefined) { totals.ztp += rec.ztp; counts.ztp++; }
+              if (rec.devir !== undefined) { totals.devir += rec.devir; counts.devir++; }
+              if (rec.sek !== undefined) { totals.sek += rec.sek; counts.sek++; }
+              if (rec.iade !== undefined) { totals.iade += rec.iade; counts.iade++; }
+            }
+          }
+        });
+
+        ztpData.push(counts.ztp > 0 ? parseFloat((totals.ztp / counts.ztp).toFixed(1)) : 0);
+        devirData.push(counts.devir > 0 ? parseFloat((totals.devir / counts.devir).toFixed(1)) : 0);
+        sekData.push(counts.sek > 0 ? parseFloat((totals.sek / counts.sek).toFixed(1)) : 0);
+        iadeData.push(counts.iade > 0 ? parseFloat((totals.iade / counts.iade).toFixed(1)) : 0);
+      });
+
+      const ctx = document.getElementById('allUnitsChart').getContext('2d');
+      if (allUnitsChartObj) allUnitsChartObj.destroy();
+
+      allUnitsChartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { 
+              label: 'ZTP (%)', 
+              data: ztpData, 
+              backgroundColor: '#16a34a', 
+              datalabels: { anchor: 'end', align: 'top', rotation: -45, color: '#15803d', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 0 ? '%' + v : '' }
+            },
+            { 
+              label: 'Devir (%)', 
+              data: devirData, 
+              backgroundColor: '#dc2626', 
+              datalabels: { anchor: 'end', align: 'top', rotation: -45, color: '#b91c1c', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 0 ? '%' + v : '' }
+            },
+            { 
+              label: 'SEK (%)', 
+              data: sekData, 
+              backgroundColor: '#ca8a04', 
+              datalabels: { anchor: 'end', align: 'top', rotation: -45, color: '#a16207', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 0 ? '%' + v : '' }
+            },
+            { 
+              label: 'İade (%)', 
+              data: iadeData, 
+              backgroundColor: '#2563eb', 
+              datalabels: { anchor: 'end', align: 'top', rotation: -45, color: '#1d4ed8', font: { weight: 'bold', size: 9 }, formatter: (v) => v > 0 ? '%' + v : '' }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 30 } },
+          plugins: { datalabels: { display: true, clip: false } },
+          scales: {
+            x: { ticks: { autoSkip: false, font: { size: 9, weight: 'bold' } } },
+            y: { min: 0, max: 115, title: { display: true, text: 'Oran (%)' } }
+          }
+        }
+      });
+    }
+
+    function openTargetModal() { document.getElementById('targetModal').style.display = 'flex'; }
+    function openImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    window.onclick = function(e) {
+      if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

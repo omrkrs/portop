@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bölge Performans Portalı</title>
+  <!-- Chart.js ve DataLabels Eklentisi -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+      --erzurum-highlight: #e30613;
+      --other-region: #1e3a8a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .nav-home {
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      text-decoration: none;
+      color: var(--aras-dark);
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+    }
+    .nav-home:hover { background-color: var(--aras-red); color: white; }
+
+    header h1 { font-size: 1.4rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 6px; margin-top: 10px; }
+    header h1 span { color: var(--aras-red); }
+    
+    .status-bar {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Controls */
+    .controls-container { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 18px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.88rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    /* Top Ranking Chart Area */
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 4px solid var(--aras-red);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .chart-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .chart-title-text { font-size: 1.1rem; color: var(--aras-dark); font-weight: 800; text-transform: uppercase; }
+
+    .toggle-group { display: flex; background: #f1f5f9; padding: 4px; border-radius: 20px; border: 1px solid var(--border-color); }
+    .toggle-btn { border: none; background: transparent; padding: 6px 14px; font-weight: 700; font-size: 0.8rem; border-radius: 16px; cursor: pointer; color: #64748b; }
+    .toggle-btn.active { background: var(--aras-red); color: white; }
+
+    .chart-wrapper { width: 100%; height: 420px; position: relative; }
+
+    /* Grid Layout for Regions */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 4px solid var(--other-region);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card.erzurum-card { border-top-color: var(--aras-red); background: #fffcfc; }
+
+    .card-title { font-size: 1rem; font-weight: 800; color: var(--aras-dark); text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+    .erzurum-card .card-title { color: var(--aras-red); }
+
+    .kpi-row-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .mini-kpi { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; text-align: center; }
+    .mini-kpi-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    .mini-kpi-val { font-size: 1.25rem; font-weight: 800; color: var(--aras-dark); margin-top: 2px; }
+
+    .target-status { font-size: 0.68rem; font-weight: 700; padding: 2px 5px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+    .status-above { background: #dcfce7; color: #15803d; }
+    .status-below { background: #fee2e2; color: #b91c1c; }
+
+    /* Modallar */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+    .modal-content { background: white; padding: 22px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 650px; position: relative; max-height: 92vh; overflow-y: auto; }
+    .modal-large { max-width: 95vw !important; width: 1000px !important; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; z-index: 10; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; color: var(--aras-dark); }
+    .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; }
+
+    textarea { width: 100%; height: 160px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; font-family: monospace; resize: vertical; }
+
+    .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+    .report-table th, .report-table td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: center; }
+    .report-table th { background-color: #f8fafc; font-weight: 700; color: var(--aras-dark); }
+
+    .status-badge-ok { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .status-badge-miss { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header { padding-top: 45px; }
+      .nav-home { top: 10px; left: 10px; }
+      .grid-container { grid-template-columns: 1fr; }
+      .controls-container { flex-direction: column; }
+      .btn-action { width: 100%; }
+      .chart-wrapper { height: 320px; }
+      .chart-header-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <a href="index.html" class="nav-home">🏠 Ana Menü</a>
+      <h1><span>BÖLGELER</span> PERFORMANS PORTALI</h1>
+      <div class="status-bar" id="statusText">Bulut Veritabanına Bağlanılıyor...</div>
+    </header>
+
+    <div class="controls-container">
+      <button class="btn-action" onclick="openTargetModal()">⚙ Bölge Hedefleri</button>
+      <button class="btn-action" onclick="openImportModal()">📅 Veri Girişi (Excel)</button>
+      <button class="btn-action" style="background:#2563eb;" onclick="openKpiReportModal()">📊 Giriş Raporu</button>
+    </div>
+
+    <!-- ÜST BAŞARI SIRALAMASI GRAFİĞİ VE MOD GEÇİŞİ -->
+    <div class="chart-card">
+      <div class="chart-header-row">
+        <div>
+          <div class="chart-title-text" id="chartMainTitle">🏆 TÜRKİYE GENELİ BÖLGE BAŞARI SIRALAMASI</div>
+          <small id="chartDateText" style="font-size:0.8rem; color:#64748b; font-weight:600;"></small>
+        </div>
+        <!-- SIRALAMA MODU SEÇİMİ (GÜNLÜK vs AYLIK ORTALAMA) -->
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="btnModeDaily" onclick="switchChartMode('DAILY')">📆 Son Günlük Sıralama</button>
+          <button class="toggle-btn" id="btnModeMonthly" onclick="switchChartMode('MONTHLY')">📊 Aylık Ortalama Hedef Sıralaması</button>
+        </div>
+      </div>
+
+      <div class="chart-wrapper">
+        <canvas id="rankingChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 12 BÖLGE KARTLARI -->
+    <div class="grid-container" id="bolgeContainer"></div>
+  </div>
+
+  <!-- 1. BÖLGE HEDEFLERİ MODALI -->
+  <div class="modal" id="targetModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('targetModal')">&times;</span>
+      <h3 class="modal-title">⚙️ Bölge Teslimat Performansı Hedefleri</h3>
+      
+      <div class="form-group">
+        <label for="targetBolgeSelect">Hedefini Düzenleyeceğiniz Bölgeyi Seçin:</label>
+        <select id="targetBolgeSelect" onchange="onTargetBolgeChange()"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="targetPerfInput">Teslimat Performansı Hedefi (%):</label>
+        <input type="number" id="targetPerfInput" value="95" step="0.1">
+      </div>
+
+      <button class="btn-action" style="width:100%; margin-top:10px; border-radius:6px;" onclick="saveSelectedBolgeTarget()">Seçili Bölge Hedefini Kaydet</button>
+
+      <hr style="margin:18px 0; border:none; border-top:1px dashed #cbd5e1;">
+
+      <div class="form-group">
+        <label><b>Alternatif:</b> Tüm Bölge Hedeflerini Excel'den Toplu Yapıştırın:</label>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:4px;">Format: <b>Bölge Adı [TAB] Hedef Performans (%)</b></p>
+        <textarea id="pasteBulkTargets" placeholder="AKDENİZ BÖLGE	95.5&#10;ERZURUM BÖLGE	97.0"></textarea>
+        <button class="btn-action" style="width:100%; margin-top:6px; background:#0284c7; border-radius:4px;" onclick="saveBulkTargets()">Toplu Hedefleri Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. GÜNLÜK VERİ GİRİŞİ MODALI -->
+  <div class="modal" id="importModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('importModal')">&times;</span>
+      <h3 class="modal-title">📅 Günlük Bölge Performansı Veri Girişi</h3>
+      
+      <div class="form-group">
+        <label for="dataDate">Veri Giriş Tarihi Seçin (Geçmişe Dönük Girilebilir):</label>
+        <input type="date" id="dataDate">
+      </div>
+
+      <div class="form-group">
+        <label>Excel'deki Verilerinizi Yapıştırın:</label>
+        <p style="font-size:0.78rem; color:#666; margin-bottom:4px;">Format: <b>Bölge Adı [TAB] Teslimat Performansı (%)</b></p>
+        <textarea id="pastePerfInput" placeholder="AKDENİZ BÖLGE	94.8&#10;ANKARA BÖLGE	93.2&#10;ERZURUM BÖLGE	96.5"></textarea>
+      </div>
+
+      <button class="btn-action" style="width:100%; margin-top:10px; border-radius:6px;" onclick="saveDailyData()">Verileri Kaydet ve Buluta Gönder</button>
+    </div>
+  </div>
+
+  <!-- 3. VERİ GİRİŞ TAKİP RAPOR MODALI -->
+  <div class="modal" id="kpiReportModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('kpiReportModal')">&times;</span>
+      <h3 class="modal-title">📊 Son 30 Günün Bölge Veri Giriş Takip Raporu</h3>
+      
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">TARİH</th>
+            <th>VERİ GİRİŞ DURUMU</th>
+            <th>GİRİLEN BÖLGE SAYISI</th>
+          </tr>
+        </thead>
+        <tbody id="kpiReportTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+
+    // -------------------------------------------------------------
+    // BÖLGE PERFORMANS MODÜLÜ İÇİN YENİ JSONBIN BİLGİLERİNİZİ GİRİN:
+    // -------------------------------------------------------------
+    const JSONBIN_BIN_ID = '6abd7bb4ffd5d16053407780';
+    const JSONBIN_MASTER_KEY = '$2a$10$tt.AspNWew11WXRrZC0KBO37XaWoZIoiEGLRUVqAu.a4qCugcEDiG';
+
+    const defaultBolgeler = [
+      "AKDENİZ BÖLGE",
+      "ANKARA BÖLGE",
+      "BATI KARADENİZ BÖLGE",
+      "BOĞAZİÇİ BÖLGE",
+      "BURSA BÖLGE",
+      "DİYARBAKIR BÖLGE",
+      "EGE BÖLGE",
+      "ERZURUM BÖLGE",
+      "GÜNEY ANADOLU BÖLGE",
+      "İSTANBUL ANADOLU BÖLGE",
+      "ORTA ANADOLU BÖLGE",
+      "TRAKYA BÖLGE"
+    ];
+
+    let globalBolgeData = {
+      targets: {},
+      records: {}
+    };
+
+    let currentChartMode = 'DAILY'; // 'DAILY' veya 'MONTHLY'
+    let rankingChartObj = null;
+
+    window.onload = () => {
+      document.getElementById('dataDate').valueAsDate = new Date();
+      populateBolgeSelectDropdown();
+
+      if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID.includes('BOLGE_')) {
+        document.getElementById('statusText').innerText = "Lütfen koda yeni JSONBin Bin ID bilginizi ekleyin!";
+        renderCards();
+        renderRankingChart();
+        return;
+      }
+      loadFromCloud();
+    };
+
+    function populateBolgeSelectDropdown() {
+      const select = document.getElementById('targetBolgeSelect');
+      select.innerHTML = '<option value="DEFAULT">-- Varsayılan (Tüm Bölgeler İçin Standart %95) --</option>';
+      defaultBolgeler.forEach(b => {
+        select.innerHTML += `<option value="${b}">${b}</option>`;
+      });
+    }
+
+    function loadFromCloud() {
+      document.getElementById('statusText').innerText = "Buluttan veriler çekiliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && typeof data.record === 'object') {
+          globalBolgeData = data.record;
+          if (!globalBolgeData.targets) globalBolgeData.targets = {};
+          if (!globalBolgeData.records) globalBolgeData.records = {};
+
+          cleanOldData();
+          document.getElementById('statusText').innerText = "✅ Canlı Bulut Bağlantısı Aktif";
+        }
+        onTargetBolgeChange();
+        renderCards();
+        renderRankingChart();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Buluta bağlanılamadı!";
+        renderCards();
+        renderRankingChart();
+      });
+    }
+
+    function saveToCloud() {
+      document.getElementById('statusText').innerText = "⏳ Buluta kaydediliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_MASTER_KEY
+        },
+        body: JSON.stringify(globalBolgeData)
+      })
+      .then(res => res.json())
+      .then(() => {
+        document.getElementById('statusText').innerText = "✅ Canlı Buluta Kaydedildi";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Kaydedilirken hata oluştu!";
+      });
+    }
+
+    function cleanOldData() {
+      const now = new Date();
+      const cutoff = new Date();
+      cutoff.setDate(now.getDate() - 30);
+
+      Object.keys(globalBolgeData.records || {}).forEach(dateStr => {
+        const d = new Date(dateStr);
+        if (d < cutoff) {
+          delete globalBolgeData.records[dateStr];
+        }
+      });
+    }
+
+    function getBolgeTarget(bolgeName) {
+      if (globalBolgeData.targets && globalBolgeData.targets[bolgeName]) {
+        return globalBolgeData.targets[bolgeName];
+      }
+      if (globalBolgeData.targets && globalBolgeData.targets['DEFAULT']) {
+        return globalBolgeData.targets['DEFAULT'];
+      }
+      return 95.0;
+    }
+
+    function onTargetBolgeChange() {
+      const selected = document.getElementById('targetBolgeSelect').value;
+      const t = getBolgeTarget(selected);
+      document.getElementById('targetPerfInput').value = t;
+    }
+
+    function saveSelectedBolgeTarget() {
+      const selected = document.getElementById('targetBolgeSelect').value;
+      const val = parseFloat(document.getElementById('targetPerfInput').value) || 95.0;
+
+      if (!globalBolgeData.targets) globalBolgeData.targets = {};
+      globalBolgeData.targets[selected] = val;
+
+      saveToCloud();
+      renderCards();
+      renderRankingChart();
+      closeModal('targetModal');
+      alert(`✅ ${selected} için özel hedef %${val} olarak kaydedildi!`);
+    }
+
+    function saveBulkTargets() {
+      const text = document.getElementById('pasteBulkTargets').value.trim();
+      if (!text) { alert("Lütfen verileri yapıştırın!"); return; }
+
+      const lines = text.split('\n');
+      let count = 0;
+
+      if (!globalBolgeData.targets) globalBolgeData.targets = {};
+
+      lines.forEach(line => {
+        const parts = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+        if (parts.length >= 2) {
+          const bName = parts[0].trim().toUpperCase();
+          const val = parseFloat(parts[1]?.replace(',', '.'));
+          if (bName && !isNaN(val)) {
+            globalBolgeData.targets[bName] = val;
+            count++;
+          }
+        }
+      });
+
+      if (count > 0) {
+        saveToCloud();
+        renderCards();
+        renderRankingChart();
+        closeModal('targetModal');
+        alert(`✅ Toplam ${count} bölgenin hedefi güncellendi!`);
+      }
+    }
+
+    function getLatestDataForBolge(bolgeName) {
+      const dates = Object.keys(globalBolgeData.records || {}).sort().reverse();
+      for (let d of dates) {
+        if (globalBolgeData.records[d] && globalBolgeData.records[d][bolgeName] !== undefined) {
+          return { date: d, perf: globalBolgeData.records[d][bolgeName] };
+        }
+      }
+      return null;
+    }
+
+    // AYLIK ORTALAMA HESAPLAMA FONKSİYONU
+    function getMonthlyAverageForBolge(bolgeName) {
+      const dates = Object.keys(globalBolgeData.records || {});
+      let total = 0, count = 0;
+
+      dates.forEach(d => {
+        if (globalBolgeData.records[d] && globalBolgeData.records[d][bolgeName] !== undefined) {
+          total += globalBolgeData.records[d][bolgeName];
+          count++;
+        }
+      });
+
+      return count > 0 ? (total / count) : null;
+    }
+
+    function getLatestDate() {
+      const dates = Object.keys(globalBolgeData.records || {}).sort().reverse();
+      return dates.length > 0 ? dates[0] : null;
+    }
+
+    function switchChartMode(mode) {
+      currentChartMode = mode;
+      document.getElementById('btnModeDaily').className = `toggle-btn ${mode === 'DAILY' ? 'active' : ''}`;
+      document.getElementById('btnModeMonthly').className = `toggle-btn ${mode === 'MONTHLY' ? 'active' : ''}`;
+      renderRankingChart();
+    }
+
+    function renderCards() {
+      const container = document.getElementById('bolgeContainer');
+      container.innerHTML = '';
+
+      defaultBolgeler.forEach(bolge => {
+        const latest = getLatestDataForBolge(bolge);
+        const monthlyAvg = getMonthlyAverageForBolge(bolge);
+        const target = getBolgeTarget(bolge);
+        const isErzurum = bolge.includes("ERZURUM");
+
+        const perfVal = latest ? latest.perf : null;
+
+        let statusHtml = '<span class="target-status" style="background:#e2e8f0; color:#475569;">Veri Yok</span>';
+        if (perfVal !== null) {
+          const diff = (perfVal - target).toFixed(1);
+          if (diff >= 0) statusHtml = `<span class="target-status status-above">🟢 Hedefin +%${diff} Üstünde</span>`;
+          else statusHtml = `<span class="target-status status-below">🔴 Hedefin -%${Math.abs(diff)} Gerisinde</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = `card ${isErzurum ? 'erzurum-card' : ''}`;
+        card.innerHTML = `
+          <div class="card-title">${bolge}</div>
+          <div class="kpi-row-group">
+            <div class="mini-kpi">
+              <div class="mini-kpi-title">Son Günlük Perf.</div>
+              <div class="mini-kpi-val" style="${isErzurum ? 'color:var(--aras-red);' : ''}">${perfVal !== null ? '%' + perfVal : '-'}</div>
+              ${statusHtml}
+            </div>
+            <div class="mini-kpi">
+              <div class="mini-kpi-title">Aylık Ortalama</div>
+              <div class="mini-kpi-val" style="color:#0284c7;">${monthlyAvg !== null ? '%' + monthlyAvg.toFixed(1) : '-'}</div>
+              <span class="target-status" style="background:#e0f2fe; color:#0369a1;">Hedef: %${target}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // DINAMIK SIRALAMA GRAFİĞİ (GÜNLÜK VE AYLIK ORTALAMA DESTEKLİ)
+    function renderRankingChart() {
+      const latestDate = getLatestDate();
+      const isMonthly = currentChartMode === 'MONTHLY';
+
+      if (isMonthly) {
+        document.getElementById('chartMainTitle').innerText = '🏆 TÜRKİYE GENELİ AYLIK HEDEF GERÇEKLEŞME ORANI SIRALAMASI';
+        document.getElementById('chartDateText').innerText = 'Ay Başı - Bugün Arası Ortalama Gerçekleşme Hesaplaması';
+      } else {
+        document.getElementById('chartMainTitle').innerText = '🏆 TÜRKİYE GENELİ BÖLGE GÜNLÜK BAŞARI SIRALAMASI';
+        document.getElementById('chartDateText').innerText = latestDate ? `Son Güncel Veri Tarihi: ${latestDate}` : 'Henüz Veri Girilmedi';
+      }
+
+      const bolgeListWithPerf = defaultBolgeler.map(b => {
+        const latest = getLatestDataForBolge(b);
+        const monthlyAvg = getMonthlyAverageForBolge(b);
+        const target = getBolgeTarget(b);
+
+        const currentPerf = isMonthly ? (monthlyAvg !== null ? monthlyAvg : 0) : (latest ? latest.perf : 0);
+        // Hedef gerçekleşme oranı (%): (Gerçekleşen / Hedef) * 100
+        const achievementRate = target > 0 ? (currentPerf / target) * 100 : 0;
+
+        return {
+          name: b,
+          perf: currentPerf,
+          target: target,
+          achievementRate: achievementRate
+        };
+      });
+
+      // Yüksekten düşüğe doğru performans / hedef gerçekleşme sıralaması
+      bolgeListWithPerf.sort((a, b) => b.perf - a.perf);
+
+      const labels = bolgeListWithPerf.map(item => item.name);
+      const perfData = bolgeListWithPerf.map(item => parseFloat(item.perf.toFixed(1)));
+      const targetData = bolgeListWithPerf.map(item => item.target);
+
+      // Erzurum Kırmızı, Diğerleri Lacivert
+      const bgColors = bolgeListWithPerf.map(item => item.name.includes("ERZURUM") ? '#e30613' : '#1e3a8a');
+
+      const ctx = document.getElementById('rankingChart').getContext('2d');
+      if (rankingChartObj) rankingChartObj.destroy();
+
+      rankingChartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              type: 'line',
+              label: 'Bölge Hedefi (%)',
+              data: targetData,
+              borderColor: '#0284c7',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              datalabels: { display: false }
+            },
+            {
+              label: isMonthly ? 'Aylık Ortalama Perf. (%)' : 'Günlük Performans (%)',
+              data: perfData,
+              backgroundColor: bgColors,
+              borderRadius: 4,
+              datalabels: {
+                anchor: 'end',
+                align: 'top',
+                rotation: -45,
+                color: (ctx) => ctx.chart.data.labels[ctx.dataIndex].includes("ERZURUM") ? '#e30613' : '#1e3a8a',
+                font: { weight: 'bold', size: 10 },
+                formatter: (val) => val > 0 ? '%' + val : ''
+              }
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 30 } },
+          plugins: {
+            datalabels: { display: true, clip: false }
+          },
+          scales: {
+            x: {
+              ticks: {
+                autoSkip: false,
+                font: { size: 9, weight: 'bold' }
+              }
+            },
+            y: {
+              min: 0,
+              max: 112,
+              title: { display: true, text: 'Performans (%)' }
+            }
+          }
+        }
+      });
+    }
+
+    function saveDailyData() {
+      const dateVal = document.getElementById('dataDate').value;
+      const text = document.getElementById('pastePerfInput').value.trim();
+
+      if (!dateVal) { alert("Lütfen tarih seçin!"); return; }
+      if (!text) { alert("Lütfen kopyaladığınız verileri yapıştırın!"); return; }
+
+      const lines = text.split('\n');
+      let count = 0;
+
+      if (!globalBolgeData.records[dateVal]) globalBolgeData.records[dateVal] = {};
+
+      lines.forEach(line => {
+        const parts = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+        if (parts.length >= 2) {
+          const bName = parts[0].trim().toUpperCase();
+          const val = parseFloat(parts[1]?.replace(',', '.'));
+          if (bName && !isNaN(val)) {
+            globalBolgeData.records[dateVal][bName] = val;
+            count++;
+          }
+        }
+      });
+
+      if (count > 0) {
+        saveToCloud();
+        renderCards();
+        renderRankingChart();
+        closeModal('importModal');
+        document.getElementById('pastePerfInput').value = '';
+        alert(`✅ ${dateVal} tarihi için ${count} bölgenin verisi kaydedildi!`);
+      } else {
+        alert("Veriler okunamadı. Lütfen 'Bölge Adı [TAB] Performans (%)' formatında yapıştırın.");
+      }
+    }
+
+    function openKpiReportModal() {
+      const tbody = document.getElementById('kpiReportTableBody');
+      tbody.innerHTML = '';
+
+      const records = globalBolgeData.records || {};
+      const today = new Date();
+
+      for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dStr = d.toISOString().split('T')[0];
+
+        const dayRecs = records[dStr] || {};
+        const count = Object.keys(dayRecs).length;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:left; font-weight:700;">📅 ${dStr}</td>
+          <td>${count > 0 ? `<span class="status-badge-ok">✅ Girildi (${count} Bölge)</span>` : `<span class="status-badge-miss">❌ Eksik</span>`}</td>
+          <td><b>${count} / 12 Bölge</b></td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById('kpiReportModal').style.display = 'flex';
+    }
+
+    function openTargetModal() { document.getElementById('targetModal').style.display = 'flex'; }
+    function openImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    window.onclick = function(e) {
+      if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

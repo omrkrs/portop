@@ -1,0 +1,579 @@
+F<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Personel Yönetim Portalı</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-red-dark: #b8030e;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    header h1 { font-size: 1.5rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 10px; }
+    header h1 span { color: var(--aras-red); }
+
+    .status-bar {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .controls-container { display: flex; flex-direction: column; gap: 12px; max-width: 850px; margin: 0 auto; }
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 240px; padding: 12px 18px; border: 2px solid var(--border-color); border-radius: 25px; font-size: 0.95rem; }
+    .search-input:focus { outline: none; border-color: var(--aras-red); }
+
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 18px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.88rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    .kpi-section { margin-top: 20px; margin-bottom: 20px; }
+    .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; }
+    .kpi-info { display: flex; flex-direction: column; gap: 4px; }
+    .kpi-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--aras-dark); }
+    .kpi-icon { font-size: 1.6rem; opacity: 0.85; }
+
+    .kpi-irtibat-personel { border-left: 5px solid #2563eb; }
+    .kpi-mudur { border-left: 5px solid #f97316; }
+    .kpi-irtibat-esnaf { border-left: 5px solid #a855f7; }
+    .kpi-acente-esnaf { border-left: 5px solid #eab308; }
+    .kpi-kurye { border-left: 5px solid #06b6d4; }
+    .kpi-total-card { background: #1e1e24; color: white; border-left: 5px solid var(--aras-red); }
+    .kpi-total-card .kpi-title { color: #94a3b8; }
+    .kpi-total-card .kpi-value { color: #ffffff; }
+
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+    .no-result { grid-column: 1 / -1; text-align: center; padding: 30px; color: #777; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-top: 4px solid var(--aras-red); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-header-area { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 6px; margin-bottom: 10px; }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--aras-dark); text-transform: uppercase; }
+    .type-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
+    .type-acente { background-color: #fdf2f2; color: var(--aras-red); border: 1px solid #f87171; }
+    .type-irtibat { background-color: #eff6ff; color: #2563eb; border: 1px solid #60a5fa; }
+    .type-direkt { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    .info-box { background-color: #fdf2f2; border-left: 3px solid var(--aras-red); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 0.88rem; }
+    .button-group { display: flex; flex-direction: column; gap: 8px; }
+    .btn { border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; font-size: 0.88rem; }
+    .btn-add { background-color: var(--aras-red); color: white; }
+    .btn-type { background-color: #f1f5f9; color: var(--aras-dark); border: 1px solid var(--border-color); }
+    .btn-show { background-color: #ffffff; color: var(--aras-dark); border: 1px solid var(--border-color); }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+    .modal-content { background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
+    .modal-large { max-width: 95% !important; width: 1100px; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; z-index: 10; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; padding-right: 30px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.85rem; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; }
+
+    .personel-list { list-style-type: none; max-height: 320px; overflow-y: auto; }
+    .personel-list li { padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .btn-delete { background-color: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+
+    .analysis-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .analysis-table th, .analysis-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; }
+    .analysis-table th { background-color: #fdf2f2; color: var(--aras-red); font-weight: 700; }
+    .analysis-table td:last-child { font-weight: 700; text-align: right; }
+
+    /* Mobilde Kaydırılabilir Grafik Kapsayıcı Alanı */
+    .chart-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 15px;
+    }
+
+    .chart-container {
+      position: relative;
+      min-width: 900px; /* Mobilde sıkışmayı önlemek için minimum genişlik */
+      height: 420px;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header h1 { font-size: 1.25rem; }
+      .search-row { flex-direction: column; }
+      .btn-action { width: 100%; border-radius: 20px; }
+      .grid-container { grid-template-columns: 1fr; }
+      .kpi-container { grid-template-columns: 1fr; }
+      .modal-content { padding: 15px; }
+      .chart-container { height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1><span>ŞUBE</span> PERSONEL YÖNETİM PORTALI</h1>
+      <div class="status-bar" id="statusText">Bulut Veritabanına Bağlanılıyor...</div>
+<a href="index.html" style="text-decoration:none; color:#1e1e24; font-weight:bold; font-size:0.85rem;">🏠 Ana Menüye Dön</a>
+    </header>
+
+    <div class="controls-container">
+      <div class="search-row">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Şube adı veya Personel İsmi yazarak arayın..." oninput="applyFilters()">
+        <button class="btn-action" onclick="openAnalysisModal()">📊 Personel Analizi Yap</button>
+        <button class="btn-action" onclick="openChartModal()">📈 Grafik Oluştur</button>
+      </div>
+    </div>
+
+    <div class="kpi-section">
+      <div class="kpi-container">
+        <div class="kpi-card kpi-irtibat-personel">
+          <div class="kpi-info"><span class="kpi-title">İrtibat Personeli</span><span class="kpi-value" id="kpiIrtibatPersonelCount">0</span></div>
+          <div class="kpi-icon">🏢</div>
+        </div>
+        <div class="kpi-card kpi-mudur">
+          <div class="kpi-info"><span class="kpi-title">Şube Müdürleri</span><span class="kpi-value" id="kpiMudurCount">0</span></div>
+          <div class="kpi-icon">💼</div>
+        </div>
+        <div class="kpi-card kpi-irtibat-esnaf">
+          <div class="kpi-info"><span class="kpi-title">İrtibat Esnaf Kurye</span><span class="kpi-value" id="kpiIrtibatEsnafCount">0</span></div>
+          <div class="kpi-icon">🛵</div>
+        </div>
+        <div class="kpi-card kpi-acente-esnaf">
+          <div class="kpi-info"><span class="kpi-title">Acente Esnaf Kurye</span><span class="kpi-value" id="kpiAcenteEsnafCount">0</span></div>
+          <div class="kpi-icon">🔴</div>
+        </div>
+        <div class="kpi-card kpi-kurye">
+          <div class="kpi-info"><span class="kpi-title">Toplam Kurye</span><span class="kpi-value" id="kpiKuryeCount">0</span></div>
+          <div class="kpi-icon">🚚</div>
+        </div>
+        <div class="kpi-card kpi-total-card">
+          <div class="kpi-info"><span class="kpi-title">GENEL TOPLAM</span><span class="kpi-value" id="kpiTotalPersonel">0</span></div>
+          <div class="kpi-icon">📊</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-container" id="subeContainer"></div>
+  </div>
+
+  <!-- Personel Ekle Modalı -->
+  <div class="modal" id="addPersonelModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('addPersonelModal')">&times;</span>
+      <h3 class="modal-title" id="addPersonelModalTitle">Personel Ekle</h3>
+      <div class="form-group"><label>Ad Soyad:</label><input type="text" id="personelAdSoyad" placeholder="Örn: Ahmet Yılmaz"></div>
+      <div class="form-group">
+        <label>Görevi / Unvanı:</label>
+        <select id="personelGorev">
+          <option value="Şube Müdürü">Şube Müdürü</option>
+          <option value="Kurye">Kurye</option>
+          <option value="Esnaf Kurye">Esnaf Kurye</option>
+          <option value="Operasyon / Diğer">Operasyon / Diğer</option>
+        </select>
+      </div>
+      <button class="btn btn-add" onclick="savePersonel()" style="margin-top: 15px;">Kaydet</button>
+    </div>
+  </div>
+
+  <!-- Şube Tipi Modalı -->
+  <div class="modal" id="typeModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('typeModal')">&times;</span>
+      <h3 class="modal-title" id="typeModalTitle">Şube Tipi Ayarla</h3>
+      <div class="form-group">
+        <label>Şube Durumu Seçin:</label>
+        <select id="subeTipiSelect">
+          <option value="Acente">Acente</option>
+          <option value="İrtibat">İrtibat</option>
+          <option value="Direkt Şube">Direkt Şube</option>
+        </select>
+      </div>
+      <button class="btn btn-add" onclick="saveSubeTipi()">Kaydet</button>
+    </div>
+  </div>
+
+  <!-- Personel Listeleme Modalı -->
+  <div class="modal" id="listPersonelModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('listPersonelModal')">&times;</span>
+      <h3 class="modal-title" id="listPersonelModalTitle">Kayıtlı Personeller</h3>
+      <ul class="personel-list" id="modalPersonelListesi"></ul>
+    </div>
+  </div>
+
+  <!-- Analiz Modalı -->
+  <div class="modal" id="analysisModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('analysisModal')">&times;</span>
+      <h3 class="modal-title">📊 Genel Personel Analiz Raporu</h3>
+      <table class="analysis-table">
+        <thead><tr><th>KATEGORİ</th><th style="text-align: right;">TOPLAM PERSONEL</th></tr></thead>
+        <tbody>
+          <tr><td>🏢 İrtibat Personel Sayısı</td><td id="reportIrtibatPersonel">0</td></tr>
+          <tr><td>💼 Toplam Şube Müdürü</td><td id="reportMudur">0</td></tr>
+          <tr><td>🛵 İrtibat Esnaf Kurye</td><td id="reportIrtibatEsnaf">0</td></tr>
+          <tr><td>🔴 Acente Esnaf Kurye</td><td id="reportAcenteEsnaf">0</td></tr>
+          <tr><td>🚚 Toplam Kurye</td><td id="reportKurye">0</td></tr>
+          <tr style="background:#f1f5f9; font-weight:bold;"><td>GENEL TOPLAM PERSONEL</td><td id="reportTotalPersonel">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Grafik Modalı (Mobil Uyumlu) -->
+  <div class="modal" id="chartModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('chartModal')">&times;</span>
+      <h3 class="modal-title">📈 Şubelere Göre Personel Dağılım Grafiği</h3>
+      
+      <div class="chart-wrapper">
+        <div class="chart-container">
+          <canvas id="personelChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const JSONBIN_BIN_ID = '6abae83cffd5d16053394a09';
+    const JSONBIN_MASTER_KEY = '$2a$10$tt.AspNWew11WXRrZC0KBO37XaWoZIoiEGLRUVqAu.a4qCugcEDiG';
+
+    const defaultSubeler = [
+      "BULANCAK", "GÜRCÜKAPI", "GİRESUN", "ERZİNCAN", "RİZE", "HOPA", "OF", 
+      "ÇAYELİ", "AKÇAABAT", "VAKFİKEBİR", "SERHAT", "ARTVİN", "TİREBOLU", 
+      "SARIKAMIŞ", "BAYBURT", "GÜMÜŞHANE", "SEMERCİLER", "ŞÜKRÜPAŞA", 
+      "ONDÖRTKASIM", "AĞRI", "DOĞUBEYAZIT", "ARDAHAN", "SÜRMENE", "YONCALIK", 
+      "KAĞIZMAN", "PAZAR", "AVNİAKER", "HORASAN", "PATNOS", "OLTU", 
+      "SELİM", "MALAZGİRT", "ARSİN", "KELKİT", "PALANDÖKEN", "ARDEŞEN", 
+      "HINIS", "KAFKAS", "GÖKKUŞAĞI"
+    ];
+
+    let activeSubeIndex = null;
+    let subeData = [];
+    let myChart = null;
+
+    window.onload = () => {
+      defaultSubeler.sort((a, b) => a.localeCompare(b, 'tr'));
+
+      if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID.includes('BURAYA_')) {
+        document.getElementById('statusText').innerText = "Lütfen koda JSONBin Bin ID ve Master Key bilgilerinizi ekleyin!";
+        initLocalDefault();
+        return;
+      }
+      loadFromCloud();
+    };
+
+    function initLocalDefault() {
+      subeData = defaultSubeler.map(subeAdi => ({
+        birim: subeAdi,
+        tip: 'Acente',
+        personeller: []
+      }));
+      applyFilters();
+    }
+
+    function loadFromCloud() {
+      document.getElementById('statusText').innerText = "Bulut veritabanından çekiliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && Array.isArray(data.record) && data.record.length > 0) {
+          subeData = data.record;
+          document.getElementById('statusText').innerText = "✅ Canlı Bulut Bağlantısı Aktif";
+        } else {
+          initLocalDefault();
+          saveToCloud();
+        }
+        applyFilters();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Bulut veritabanına bağlanılamadı!";
+        initLocalDefault();
+      });
+    }
+
+    function saveToCloud() {
+      document.getElementById('statusText').innerText = "⏳ Buluta kaydediliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_MASTER_KEY
+        },
+        body: JSON.stringify(subeData)
+      })
+      .then(res => res.json())
+      .then(() => {
+        document.getElementById('statusText').innerText = "✅ Canlı Buluta Başarıyla Kaydedildi";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Kaydedilirken hata oluştu!";
+      });
+    }
+
+    function updateKpiCards() {
+      let irtibatPersonelCount = 0, mudurCount = 0, irtibatEsnafCount = 0, acenteEsnafCount = 0, kuryeCount = 0, totalPersonel = 0;
+
+      subeData.forEach(sube => {
+        const subeTipi = sube.tip || 'Acente';
+        if (sube.personeller) {
+          sube.personeller.forEach(p => {
+            totalPersonel++;
+            const g = (p.gorev || '').toLocaleLowerCase('tr');
+
+            if (subeTipi === 'İrtibat') irtibatPersonelCount++;
+            if (g.includes('müdür') || g.includes('mudur') || g.includes('md')) mudurCount++;
+            if (g.includes('esnaf')) {
+              if (subeTipi === 'İrtibat') irtibatEsnafCount++;
+              if (subeTipi === 'Acente') acenteEsnafCount++;
+            }
+            if (g.includes('kurye')) kuryeCount++;
+          });
+        }
+      });
+
+      document.getElementById('kpiIrtibatPersonelCount').innerText = irtibatPersonelCount;
+      document.getElementById('kpiMudurCount').innerText = mudurCount;
+      document.getElementById('kpiIrtibatEsnafCount').innerText = irtibatEsnafCount;
+      document.getElementById('kpiAcenteEsnafCount').innerText = acenteEsnafCount;
+      document.getElementById('kpiKuryeCount').innerText = kuryeCount;
+      document.getElementById('kpiTotalPersonel').innerText = totalPersonel;
+    }
+
+    function renderCards(dataToRender) {
+      const container = document.getElementById('subeContainer');
+      container.innerHTML = '';
+
+      if (dataToRender.length === 0) {
+        container.innerHTML = '<div class="no-result">Aramanızla eşleşen şube veya personel bulunamadı.</div>';
+        return;
+      }
+
+      dataToRender.forEach((item) => {
+        const originalIndex = subeData.findIndex(s => s.birim === item.birim);
+        const tipStr = item.tip || 'Acente';
+        const personelSayisi = item.personeller ? item.personeller.length : 0;
+
+        let badgeClass = 'type-acente';
+        if (tipStr === 'İrtibat') badgeClass = 'type-irtibat';
+        if (tipStr === 'Direkt Şube') badgeClass = 'type-direkt';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <div class="card-header-area">
+              <span class="card-title">${item.birim}</span>
+              <span class="type-badge ${badgeClass}">${tipStr}</span>
+            </div>
+            <div class="info-box">
+              <div><strong>Kayıtlı Personel Sayısı:</strong> ${personelSayisi} Kişi</div>
+            </div>
+          </div>
+          <div class="button-group">
+            <button class="btn btn-add" onclick="openAddPersonelModal(${originalIndex})">➕ Personel Ekle</button>
+            <button class="btn btn-type" onclick="openTypeModal(${originalIndex})">⚙️ Şube Tipi (${tipStr})</button>
+            <button class="btn btn-show" onclick="openListPersonelModal(${originalIndex})">👁️ Personelleri Göster</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('searchInput').value.toLocaleLowerCase('tr').trim();
+
+      const filtered = subeData.filter(item => {
+        const matchesSube = item.birim.toLocaleLowerCase('tr').includes(query);
+        const matchesPersonel = item.personeller && item.personeller.some(p => 
+          p.adSoyad.toLocaleLowerCase('tr').includes(query) || 
+          p.gorev.toLocaleLowerCase('tr').includes(query)
+        );
+        return !query || matchesSube || matchesPersonel;
+      });
+
+      updateKpiCards();
+      renderCards(filtered);
+    }
+
+    function openAddPersonelModal(index) {
+      activeSubeIndex = index;
+      document.getElementById('addPersonelModalTitle').innerText = `${subeData[index].birim} - Personel Ekle`;
+      document.getElementById('personelAdSoyad').value = '';
+      document.getElementById('personelGorev').value = 'Kurye';
+      document.getElementById('addPersonelModal').style.display = 'flex';
+    }
+
+    function savePersonel() {
+      const adSoyad = document.getElementById('personelAdSoyad').value.trim();
+      const gorev = document.getElementById('personelGorev').value;
+
+      if (!adSoyad) {
+        alert("Lütfen personelin Adı ve Soyadını girin!");
+        return;
+      }
+
+      if (!subeData[activeSubeIndex].personeller) {
+        subeData[activeSubeIndex].personeller = [];
+      }
+
+      subeData[activeSubeIndex].personeller.push({ adSoyad: adSoyad, gorev: gorev });
+      
+      applyFilters();
+      saveToCloud();
+      closeModal('addPersonelModal');
+    }
+
+    function openTypeModal(index) {
+      activeSubeIndex = index;
+      document.getElementById('typeModalTitle').innerText = `${subeData[index].birim} - Şube Tipi`;
+      document.getElementById('subeTipiSelect').value = subeData[index].tip || 'Acente';
+      document.getElementById('typeModal').style.display = 'flex';
+    }
+
+    function saveSubeTipi() {
+      subeData[activeSubeIndex].tip = document.getElementById('subeTipiSelect').value;
+      applyFilters();
+      saveToCloud();
+      closeModal('typeModal');
+    }
+
+    function deletePersonel(subeIndex, personelIndex) {
+      if (confirm("Bu personeli silmek istediğinize emin misiniz?")) {
+        subeData[subeIndex].personeller.splice(personelIndex, 1);
+        applyFilters();
+        saveToCloud();
+        openListPersonelModal(subeIndex);
+      }
+    }
+
+    function openListPersonelModal(index) {
+      activeSubeIndex = index;
+      const sube = subeData[index];
+      document.getElementById('listPersonelModalTitle').innerText = `${sube.birim} - Kayıtlı Personeller`;
+      
+      const listContainer = document.getElementById('modalPersonelListesi');
+      listContainer.innerHTML = '';
+
+      if (!sube.personeller || sube.personeller.length === 0) {
+        listContainer.innerHTML = '<li style="justify-content: center; color: #888;">Henüz kayıtlı personel yok.</li>';
+      } else {
+        sube.personeller.forEach((p, pIndex) => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div class="personel-details">
+              <span class="personel-name">${p.adSoyad}</span>
+              <span class="personel-role">${p.gorev}</span>
+            </div>
+            <button class="btn-delete" onclick="deletePersonel(${index}, ${pIndex})">🗑️ Sil</button>
+          `;
+          listContainer.appendChild(li);
+        });
+      }
+
+      document.getElementById('listPersonelModal').style.display = 'flex';
+    }
+
+    function openAnalysisModal() {
+      updateKpiCards();
+      document.getElementById('reportIrtibatPersonel').innerText = document.getElementById('kpiIrtibatPersonelCount').innerText + ' Kişi';
+      document.getElementById('reportMudur').innerText = document.getElementById('kpiMudurCount').innerText + ' Kişi';
+      document.getElementById('reportIrtibatEsnaf').innerText = document.getElementById('kpiIrtibatEsnafCount').innerText + ' Kişi';
+      document.getElementById('reportAcenteEsnaf').innerText = document.getElementById('kpiAcenteEsnafCount').innerText + ' Kişi';
+      document.getElementById('reportKurye').innerText = document.getElementById('kpiKuryeCount').innerText + ' Kişi';
+      document.getElementById('reportTotalPersonel').innerText = document.getElementById('kpiTotalPersonel').innerText + ' Kişi';
+      document.getElementById('analysisModal').style.display = 'flex';
+    }
+
+    function openChartModal() {
+      document.getElementById('chartModal').style.display = 'flex';
+
+      const labels = [], mudurData = [], kuryeData = [], esnafData = [], digerData = [];
+
+      subeData.forEach(sube => {
+        labels.push(sube.birim);
+        let m = 0, k = 0, e = 0, d = 0;
+
+        if (sube.personeller) {
+          sube.personeller.forEach(p => {
+            const g = (p.gorev || '').toLocaleLowerCase('tr');
+            if (g.includes('müdür') || g.includes('mudur') || g.includes('md')) m++;
+            else if (g.includes('esnaf')) e++;
+            else if (g.includes('kurye')) k++;
+            else d++;
+          });
+        }
+
+        mudurData.push(m); kuryeData.push(k); esnafData.push(e); digerData.push(d);
+      });
+
+      const ctx = document.getElementById('personelChart').getContext('2d');
+      if (myChart) myChart.destroy();
+
+      myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Şube Müdürü', data: mudurData, backgroundColor: '#f97316' },
+            { label: 'Kurye', data: kuryeData, backgroundColor: '#06b6d4' },
+            { label: 'Esnaf Kurye', data: esnafData, backgroundColor: '#e30613' },
+            { label: 'Operasyon / Diğer', data: digerData, backgroundColor: '#64748b' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { font: { size: 10 }, autoSkip: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

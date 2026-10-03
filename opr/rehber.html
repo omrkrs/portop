@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Şube ve Operasyon İletişim Portalı</title>
+  <!-- Excel Okuma Kütüphanesi (SheetJS / xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-red-dark: #b8030e;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .nav-home {
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      text-decoration: none;
+      color: var(--aras-dark);
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+    }
+    .nav-home:hover { background-color: var(--aras-red); color: white; }
+
+    header h1 { font-size: 1.4rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 6px; margin-top: 10px; }
+    header h1 span { color: var(--aras-red); }
+    header p { color: #64748b; font-size: 0.88rem; }
+
+    /* Controls & Search */
+    .controls-container { display: flex; flex-direction: column; gap: 12px; max-width: 850px; margin: 0 auto 20px auto; }
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 260px; padding: 14px 20px; border: 2px solid var(--border-color); border-radius: 28px; font-size: 1rem; }
+    .search-input:focus { outline: none; border-color: var(--aras-red); box-shadow: 0 0 8px rgba(227,6,19,0.2); }
+
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 20px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.88rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    .info-bar { text-align: center; font-size: 0.85rem; color: #64748b; font-weight: 600; margin-bottom: 15px; }
+
+    /* Grid Layout */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
+    .placeholder-msg { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #64748b; font-size: 1.05rem; }
+    .placeholder-msg span { display: block; font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* Şube Kart Tasarımı */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 5px solid var(--aras-red);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(227,6,19,0.12); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+    }
+
+    .sube-name { font-size: 1.2rem; font-weight: 800; color: var(--aras-dark); text-transform: uppercase; }
+
+    .badge { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; }
+    .badge-acente { background: #fdf2f2; color: var(--aras-red); border: 1px solid #f87171; }
+    .badge-irtibat { background: #eff6ff; color: #2563eb; border: 1px solid #60a5fa; }
+    .badge-direkt { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    .info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.88rem;
+    }
+
+    .info-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #f0f0f0; padding-bottom: 4px; }
+    .info-label { color: #64748b; font-weight: 600; }
+    .info-val { font-weight: 700; color: var(--aras-dark); text-align: right; }
+
+    /* Yönetim & İletişim Kutuları */
+    .manager-box {
+      background-color: #f8fafc;
+      border-left: 4px solid var(--aras-red);
+      padding: 10px 12px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .contact-box {
+      background-color: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 10px 12px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .box-title { font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .manager-name { font-size: 0.98rem; font-weight: 800; color: var(--aras-dark); }
+    .manager-unvan { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+
+    .phone-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #ffffff;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      margin-top: 2px;
+    }
+
+    .phone-label { font-size: 0.82rem; font-weight: 700; color: #334155; }
+    .phone-actions { display: flex; gap: 5px; }
+
+    .btn-phone {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0284c7;
+      color: white;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 14px;
+      transition: background 0.2s;
+    }
+    .btn-phone:hover { background: #0369a1; }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #22c55e;
+      color: white;
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 14px;
+      transition: background 0.2s;
+    }
+    .btn-whatsapp:hover { background: #16a34a; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+    .modal-content { background: white; padding: 22px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+
+    .upload-card {
+      background: #fafafa;
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 18px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .upload-card h4 { font-size: 0.95rem; color: var(--aras-dark); margin-bottom: 6px; }
+    .upload-card p { font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+
+    .upload-card input[type="file"] { display: none; }
+    .btn-upload-file {
+      background: var(--aras-dark);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+    .btn-upload-file:hover { background: var(--aras-red); }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header { padding-top: 45px; }
+      .nav-home { top: 10px; left: 10px; }
+      .grid-container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <a href="index.html" class="nav-home">🏠 Ana Menü</a>
+      <h1><span></span> - ŞUBE VE OPERASYON İLETİŞİM PORTALI</h1>
+      <p>.</p>
+    </header>
+
+    <div class="controls-container">
+      <div class="search-row">
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="🔍 Şube adı, İl, Operasyon Yöneticisi veya Telefon No yazın..." 
+          oninput="applySearch()"
+        >
+        <button class="btn-action" onclick="openImportModal()">📂 Excel Yükle / Güncelle</button>
+      </div>
+    </div>
+
+    <div class="info-bar" id="dataInfoText">Sistemde toplam 0 şube rehberi kayıtlı.</div>
+
+    <div class="grid-container" id="rehberContainer">
+      <div class="placeholder-msg">
+        <span>🔎</span>
+        Arama yapmak için yukarıdaki arama kutusuna Şube Adı, İl, İlçe veya Telefon Numarası yazın.
+      </div>
+    </div>
+  </div>
+
+  <!-- Excel Yükleme Modalı -->
+  <div class="modal" id="importModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('importModal')">&times;</span>
+      <h3 class="modal-title">📂 Excel Dosyalarınızı Yükleyin</h3>
+      
+      <!-- 1. EXCEL: Operasyon Yöneticileri Listesi (A-L Sütunları) -->
+      <div class="upload-card">
+        <h4>1. Operasyon Yöneticileri Listesi (A-L Sütunları)</h4>
+        <p>Bölge, Şube, İl, Transfer, Sorumlu Operasyon Yöneticisi, Unvan, Mobil 1, Telefon ve Operasyon Mdr. Yrd. verilerini içerir.</p>
+        <label for="excelOprFile" class="btn-upload-file">📁 Operasyon Excel'i Seç (.xlsx / .xls)</label>
+        <input type="file" id="excelOprFile" accept=".xlsx, .xls" onchange="handleOprExcel(event)">
+      </div>
+
+      <!-- 2. EXCEL: Şube İletişim & Telefon Rehberi (A-K Sütunları) -->
+      <div class="upload-card" style="border-color:#22c55e; background:#f0fdf4;">
+        <h4 style="color:#15803d;">2. Şube Telefon Rehberi (A-K Sütunları)</h4>
+        <p>Bölge, Şube, İl, Transfer, Mobil 1, Mobil 2, Mobil 3 ve Şube Telefon Numarası verilerini içerir.</p>
+        <label for="excelSubeTelFile" class="btn-upload-file" style="background:#16a34a;">📁 Şube Telefon Excel'i Seç (.xlsx / .xls)</label>
+        <input type="file" id="excelSubeTelFile" accept=".xlsx, .xls" onchange="handleSubeTelExcel(event)">
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Ortak Billeşik Veri Hafızası
+    let masterRehberMap = {};
+
+    window.onload = () => {
+      const savedData = localStorage.getItem('arasMasterRehberCombinedMap');
+      if (savedData) {
+        masterRehberMap = JSON.parse(savedData);
+        const count = Object.keys(masterRehberMap).length;
+        document.getElementById('dataInfoText').innerText = `Sistemde toplam ${count} şube rehberi kayıtlı.`;
+      } else {
+        document.getElementById('dataInfoText').innerText = `Sistemde kayıtlı şube bulunamadı. Lütfen "Excel Yükle" butonundan dosyalarınızı ekleyin.`;
+      }
+    };
+
+    function cleanPhoneNumber(phoneStr) {
+      if (!phoneStr) return '';
+      let cleaned = String(phoneStr).replace(/\D/g, ''); 
+      if (cleaned.startsWith('0')) {
+        cleaned = '90' + cleaned.substring(1);
+      } else if (!cleaned.startsWith('90') && cleaned.length === 10) {
+        cleaned = '90' + cleaned;
+      }
+      return cleaned;
+    }
+
+    function renderCards(dataList) {
+      const container = document.getElementById('rehberContainer');
+      container.innerHTML = '';
+
+      if (dataList.length === 0) {
+        container.innerHTML = '<div class="placeholder-msg"><span>❌</span>Aramanızla eşleşen şube veya iletişim bilgisi bulunamadı.</div>';
+        return;
+      }
+
+      dataList.forEach(item => {
+        let badgeClass = 'badge-acente';
+        const tipStr = item.acenteIrtibat || 'Acente';
+        if (tipStr.includes('İrtibat')) badgeClass = 'badge-irtibat';
+        if (tipStr.includes('Direkt') || tipStr.includes('Şube')) badgeClass = 'badge-direkt';
+
+        // Telefon Temizlikleri
+        const oprMobilClean = cleanPhoneNumber(item.oprMobil1);
+        const oprTelClean = cleanPhoneNumber(item.oprTelNo);
+        const subeM1Clean = cleanPhoneNumber(item.subeMobil1);
+        const subeM2Clean = cleanPhoneNumber(item.subeMobil2);
+        const subeM3Clean = cleanPhoneNumber(item.subeMobil3);
+        const subeTelClean = cleanPhoneNumber(item.subeTelNo);
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="sube-name">${item.birimAdi || 'ŞUBE'}</span>
+            <span class="badge ${badgeClass}">${tipStr}</span>
+          </div>
+
+          <div class="info-section">
+            <div class="info-row">
+              <span class="info-label">İl / İlçe:</span>
+              <span class="info-val">${item.il || '-'} / ${item.ilce || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Bağlı Bölge:</span>
+              <span class="info-val">${item.bolgeAdi || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Hizmet Aldığı Transfer:</span>
+              <span class="info-val">${item.transferAdi || '-'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Şube Konumu:</span>
+              <span class="info-val">${item.cevreMerkez || 'Merkez'}</span>
+            </div>
+          </div>
+
+          <!-- Operasyon Yöneticisi Kutusu -->
+          <div class="manager-box">
+            <span class="box-title">👤 Sorumlu Operasyon Yöneticisi</span>
+            <span class="manager-name">${item.sorumluYonetici || 'Atanmadı'}</span>
+            ${item.unvan ? `<span class="manager-unvan">${item.unvan}</span>` : ''}
+            
+            <div style="margin-top:4px;">
+              ${item.oprTelNo ? `
+                <div class="phone-item">
+                  <span class="phone-label">Yönetici Tel: ${item.oprTelNo}</span>
+                  <div class="phone-actions">
+                    <a href="tel:${oprTelClean}" class="btn-phone">📞 Ara</a>
+                    <a href="https://wa.me/${oprTelClean}" target="_blank" class="btn-whatsapp">💬 WA</a>
+                  </div>
+                </div>
+              ` : ''}
+              ${item.oprMobil1 ? `
+                <div class="phone-item">
+                  <span class="phone-label">Kısa Kod / Mobil: ${item.oprMobil1}</span>
+                  <div class="phone-actions">
+                    <a href="tel:${oprMobilClean}" class="btn-phone">📞 Ara</a>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            ${item.oprMdrYrd ? `
+              <div style="margin-top:6px; border-top:1px dashed #cbd5e1; padding-top:4px;">
+                <span class="box-title" style="color:#2563eb;">👔 Operasyon Müdür Yardımcısı</span>
+                <div class="manager-name" style="font-size:0.9rem;">${item.oprMdrYrd}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Şube Telefon Rehberi Kutusu -->
+          <div class="contact-box">
+            <span class="box-title" style="color:#15803d;">📞 Şube Telefon Rehberi</span>
+            
+            ${item.subeMobil1 ? `
+              <div class="phone-item">
+                <span class="phone-label">Mobil 1: ${item.subeMobil1}</span>
+                <div class="phone-actions">
+                  <a href="tel:${subeM1Clean}" class="btn-phone">📞 Ara</a>
+                  <a href="https://wa.me/${subeM1Clean}" target="_blank" class="btn-whatsapp">💬 WA</a>
+                </div>
+              </div>
+            ` : ''}
+
+            ${item.subeMobil2 ? `
+              <div class="phone-item">
+                <span class="phone-label">Mobil 2: ${item.subeMobil2}</span>
+                <div class="phone-actions">
+                  <a href="tel:${subeM2Clean}" class="btn-phone">📞 Ara</a>
+                  <a href="https://wa.me/${subeM2Clean}" target="_blank" class="btn-whatsapp">💬 WA</a>
+                </div>
+              </div>
+            ` : ''}
+
+            ${item.subeMobil3 ? `
+              <div class="phone-item">
+                <span class="phone-label">Mobil 3: ${item.subeMobil3}</span>
+                <div class="phone-actions">
+                  <a href="tel:${subeM3Clean}" class="btn-phone">📞 Ara</a>
+                  <a href="https://wa.me/${subeM3Clean}" target="_blank" class="btn-whatsapp">💬 WA</a>
+                </div>
+              </div>
+            ` : ''}
+
+            ${item.subeTelNo ? `
+              <div class="phone-item" style="border-left:3px solid #0284c7;">
+                <span class="phone-label">Şube Tel: ${item.subeTelNo}</span>
+                <div class="phone-actions">
+                  <a href="tel:${subeTelClean}" class="btn-phone" style="background:#0284c7;">📞 Şubeyi Ara</a>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function applySearch() {
+      const q = document.getElementById('searchInput').value.toLocaleLowerCase('tr').trim();
+
+      if (q.length < 2) {
+        document.getElementById('rehberContainer').innerHTML = `
+          <div class="placeholder-msg">
+            <span>🔎</span>
+            Arama yapmak için yukarıdaki arama kutusuna Şube Adı, İl, İlçe veya Telefon Numarası yazın.
+          </div>`;
+        return;
+      }
+
+      const allList = Object.values(masterRehberMap);
+      const filtered = allList.filter(item => {
+        return (
+          (item.birimAdi && item.birimAdi.toLocaleLowerCase('tr').includes(q)) ||
+          (item.il && item.il.toLocaleLowerCase('tr').includes(q)) ||
+          (item.ilce && item.ilce.toLocaleLowerCase('tr').includes(q)) ||
+          (item.bolgeAdi && item.bolgeAdi.toLocaleLowerCase('tr').includes(q)) ||
+          (item.transferAdi && item.transferAdi.toLocaleLowerCase('tr').includes(q)) ||
+          (item.sorumluYonetici && item.sorumluYonetici.toLocaleLowerCase('tr').includes(q)) ||
+          (item.oprMdrYrd && item.oprMdrYrd.toLocaleLowerCase('tr').includes(q)) ||
+          (item.subeMobil1 && item.subeMobil1.includes(q)) ||
+          (item.subeMobil2 && item.subeMobil2.includes(q)) ||
+          (item.subeMobil3 && item.subeMobil3.includes(q)) ||
+          (item.subeTelNo && item.subeTelNo.includes(q)) ||
+          (item.oprTelNo && item.oprTelNo.includes(q))
+        );
+      });
+
+      renderCards(filtered);
+    }
+
+    // 1. EXCEL PARSE: OPERASYON YÖNETİCİLERİ (A-L)
+    function handleOprExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
+
+        if (jsonData.length > 1) {
+          let updatedCount = 0;
+          jsonData.slice(1).forEach(row => {
+            const key = row[1] ? String(row[1]).trim().toLocaleUpperCase('tr') : '';
+            if (key) {
+              if (!masterRehberMap[key]) masterRehberMap[key] = { birimAdi: String(row[1]).trim() };
+              
+              masterRehberMap[key].bolgeAdi = row[0] ? String(row[0]).trim() : masterRehberMap[key].bolgeAdi;
+              masterRehberMap[key].acenteIrtibat = row[2] ? String(row[2]).trim() : masterRehberMap[key].acenteIrtibat;
+              masterRehberMap[key].il = row[3] ? String(row[3]).trim() : masterRehberMap[key].il;
+              masterRehberMap[key].ilce = row[4] ? String(row[4]).trim() : masterRehberMap[key].ilce;
+              masterRehberMap[key].transferAdi = row[5] ? String(row[5]).trim() : masterRehberMap[key].transferAdi;
+              masterRehberMap[key].cevreMerkez = row[6] ? String(row[6]).trim() : masterRehberMap[key].cevreMerkez;
+              masterRehberMap[key].sorumluYonetici = row[7] ? String(row[7]).trim() : masterRehberMap[key].sorumluYonetici;
+              masterRehberMap[key].unvan = row[8] ? String(row[8]).trim() : masterRehberMap[key].unvan;
+              masterRehberMap[key].oprMobil1 = row[9] ? String(row[9]).trim() : masterRehberMap[key].oprMobil1;
+              masterRehberMap[key].oprTelNo = row[10] ? String(row[10]).trim() : masterRehberMap[key].oprTelNo;
+              masterRehberMap[key].oprMdrYrd = row[11] ? String(row[11]).trim() : masterRehberMap[key].oprMdrYrd;
+              updatedCount++;
+            }
+          });
+
+          saveMasterData();
+          alert(`✅ Operasyon Yöneticileri Listesinden ${updatedCount} şube başarıyla işlendi!`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // 2. EXCEL PARSE: ŞUBE TELEFON REHBERİ (A-K)
+    function handleSubeTelExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false });
+
+        if (jsonData.length > 1) {
+          let updatedCount = 0;
+          jsonData.slice(1).forEach(row => {
+            const key = row[1] ? String(row[1]).trim().toLocaleUpperCase('tr') : '';
+            if (key) {
+              if (!masterRehberMap[key]) masterRehberMap[key] = { birimAdi: String(row[1]).trim() };
+
+              if (!masterRehberMap[key].bolgeAdi) masterRehberMap[key].bolgeAdi = row[0] ? String(row[0]).trim() : '';
+              if (!masterRehberMap[key].acenteIrtibat) masterRehberMap[key].acenteIrtibat = row[2] ? String(row[2]).trim() : '';
+              if (!masterRehberMap[key].il) masterRehberMap[key].il = row[3] ? String(row[3]).trim() : '';
+              if (!masterRehberMap[key].ilce) masterRehberMap[key].ilce = row[4] ? String(row[4]).trim() : '';
+              if (!masterRehberMap[key].transferAdi) masterRehberMap[key].transferAdi = row[5] ? String(row[5]).trim() : '';
+              if (!masterRehberMap[key].cevreMerkez) masterRehberMap[key].cevreMerkez = row[6] ? String(row[6]).trim() : '';
+
+              masterRehberMap[key].subeMobil1 = row[7] ? String(row[7]).trim() : masterRehberMap[key].subeMobil1;
+              masterRehberMap[key].subeMobil2 = row[8] ? String(row[8]).trim() : masterRehberMap[key].subeMobil2;
+              masterRehberMap[key].subeMobil3 = row[9] ? String(row[9]).trim() : masterRehberMap[key].subeMobil3;
+              masterRehberMap[key].subeTelNo = row[10] ? String(row[10]).trim() : masterRehberMap[key].subeTelNo;
+              updatedCount++;
+            }
+          });
+
+          saveMasterData();
+          alert(`✅ Şube Telefon Rehberinden ${updatedCount} şube başarıyla işlendi ve birleştirildi!`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function saveMasterData() {
+      localStorage.setItem('arasMasterRehberCombinedMap', JSON.stringify(masterRehberMap));
+      const count = Object.keys(masterRehberMap).length;
+      document.getElementById('dataInfoText').innerText = `Sistemde toplam ${count} şube rehberi kayıtlı.`;
+      closeModal('importModal');
+    }
+
+    function openImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    window.onclick = function(e) {
+      if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
