@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Operasyonel KPI Hedef Portalı</title>
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .nav-home {
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      text-decoration: none;
+      color: var(--aras-dark);
+      font-weight: 700;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+    }
+    .nav-home:hover { background-color: var(--aras-red); color: white; }
+
+    header h1 { font-size: 1.4rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 6px; margin-top: 10px; }
+    header h1 span { color: var(--aras-red); }
+    
+    .status-bar {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .controls-container { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .search-input { flex: 1; max-width: 500px; min-width: 250px; padding: 12px 18px; border: 2px solid var(--border-color); border-radius: 25px; font-size: 0.95rem; }
+    .search-input:focus { outline: none; border-color: var(--aras-red); }
+
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 20px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.88rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    /* Sabit Bölge Kartı Alanı */
+    .region-fixed-container { margin-bottom: 25px; }
+
+    .card-region {
+      background: #fffcfc;
+      border: 2px solid var(--aras-red);
+      border-top: 6px solid var(--aras-red);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 6px 16px rgba(227, 6, 19, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-region .card-title { color: var(--aras-red); font-size: 1.25rem; font-weight: 900; }
+    .badge-bolge { background: var(--aras-red); color: white; border: none; font-size: 0.75rem; padding: 4px 10px; }
+
+    /* Grid Layout */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 18px; }
+    .no-result { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; font-size: 1rem; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 4px solid var(--aras-red);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: var(--aras-dark); text-transform: uppercase; }
+
+    .badge { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
+    .badge-acente { background: #fdf2f2; color: var(--aras-red); border: 1px solid #f87171; }
+    .badge-irtibat { background: #eff6ff; color: #2563eb; border: 1px solid #60a5fa; }
+
+    /* IZGARA TASARIMI */
+    .kpi-grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .kpi-grid-6 {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .kpi-target-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 6px 2px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 62px;
+    }
+
+    .kpi-target-box.highlight { background: #f0fdf4; border-color: #86efac; }
+
+    .kpi-name {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      line-height: 1.1;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      word-break: break-word;
+      padding: 0 2px;
+    }
+
+    .kpi-val { font-size: 0.98rem; font-weight: 800; color: #0f172a; }
+    .kpi-target-box.highlight .kpi-val { color: #15803d; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+    .modal-content { background: white; padding: 22px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 800px; position: relative; max-height: 92vh; overflow-y: auto; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; z-index: 10; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+
+    .import-section { background: #fafafa; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 15px; }
+    .import-section.region-section { background: #fff5f5; border-color: #fca5a5; }
+    .import-section label { font-weight: 800; font-size: 0.88rem; color: var(--aras-dark); display: block; margin-bottom: 4px; }
+    .import-section.region-section label { color: var(--aras-red); }
+
+    textarea { width: 100%; height: 90px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.8rem; font-family: monospace; resize: vertical; }
+
+    @media (max-width: 900px) {
+      .kpi-grid-5, .kpi-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header { padding-top: 45px; }
+      .nav-home { top: 10px; left: 10px; }
+      .grid-container { grid-template-columns: 1fr; }
+      .kpi-grid-5, .kpi-grid-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <a href="index.html" class="nav-home">🏠 Ana Menü</a>
+      <h1><span></span> - OPERASYONEL HEDEFLER  PORTALI</h1>
+      <div class="status-bar" id="statusText">Bulut Veritabanına Bağlanılıyor...</div>
+    </header>
+
+    <div class="controls-container">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Şube adı yazarak hedef arayın..." oninput="applySearch()">
+      <button class="btn-action" onclick="openImportModal()">⚙️ Excel'den Hedef Yükle / Güncelle</button>
+    </div>
+
+    <!-- EN ÜSTTE SABİT ERZURUM BÖLGE HEDEFLERİ KARTI (11 KPI) -->
+    <div class="region-fixed-container">
+      <div class="card-region" id="erzurumRegionCard"></div>
+    </div>
+
+    <!-- ŞUBE HEDEF KARTLARI (10 KPI) -->
+    <div class="grid-container" id="subeContainer"></div>
+  </div>
+
+  <!-- HEDEF YÜKLEME MODALI -->
+  <div class="modal" id="importModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('importModal')">&times;</span>
+      <h3 class="modal-title">⚙️ Excel'den Hedef Yükleme Alanı</h3>
+      
+      <div class="import-section region-section">
+        <label>📍 1. ERZURUM BÖLGE Hedefleri (11 KPI):</label>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:4px;">
+          Format: <b>ZTP [TAB] TK_İade [TAB] İndir_Zimmet [TAB] Şube_Yükle [TAB] Entegrasyon [TAB] Getbarcode [TAB] Uyum [TAB] ETA [TAB] TOPLAMA_RİNGİ [TAB] ARP [TAB] Sevk_Edilmeyen</b>
+        </p>
+        <textarea id="pasteRegionTargets" placeholder="98,00	0	1000	1000	99,0	99,5	98	95	92,5	90	0"></textarea>
+      </div>
+
+      <div class="import-section">
+        <label>🏢 2. Şube Hedefleri (39 Şube - 10 KPI):</label>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:4px;">
+          Format: <b>Şube Adı [TAB] ZTP [TAB] TK_İade [TAB] İndir_Zimmet [TAB] Şube_Yükle [TAB] Entegrasyon [TAB] Getbarcode [TAB] Uyum [TAB] ETA [TAB] ARP [TAB] Sevk_Edilmeyen</b>
+        </p>
+        <textarea id="pasteSubeTargets" style="height:140px;" placeholder="AĞRI	97,75	0	150	120	98,5	99	95	90	85	5&#10;AKÇAABAT	96,00	0	200	180	98	99,5	95	90	85,5	5"></textarea>
+      </div>
+
+      <button class="btn-action" style="width:100%; border-radius:6px; background:#0284c7;" onclick="saveAllTargets()">Tüm Hedefleri Kaydet ve Buluta Gönder</button>
+    </div>
+  </div>
+
+  <script>
+    const JSONBIN_BIN_ID = '6abe3338ffd5d1605342351e';
+    const JSONBIN_MASTER_KEY = '$2a$10$tt.AspNWew11WXRrZC0KBO37XaWoZIoiEGLRUVqAu.a4qCugcEDiG';
+
+    const defaultSubeler = [
+      { name: "AĞRI", type: "ACENTE" }, { name: "AKÇAABAT", type: "ACENTE" },
+      { name: "ARDAHAN", type: "ACENTE" }, { name: "ARDEŞEN", type: "İRTİBAT" },
+      { name: "ARSİN", type: "İRTİBAT" }, { name: "ARTVİN", type: "İRTİBAT" },
+      { name: "AVNİAKER", type: "İRTİBAT" }, { name: "BAYBURT", type: "ACENTE" },
+      { name: "BULANCAK", type: "ACENTE" }, { name: "ÇAYELİ", type: "ACENTE" },
+      { name: "DOĞUBEYAZIT", type: "İRTİBAT" }, { name: "ERZİNCAN", type: "İRTİBAT" },
+      { name: "GİRESUN", type: "İRTİBAT" }, { name: "GÖKKUŞAĞI", type: "ACENTE" },
+      { name: "GÜMÜŞHANE", type: "ACENTE" }, { name: "GÜRCÜKAPI", type: "ACENTE" },
+      { name: "HINIS", type: "ACENTE" }, { name: "HOPA", type: "ACENTE" },
+      { name: "HORASAN", type: "ACENTE" }, { name: "KAFKAS", type: "ACENTE" },
+      { name: "KAĞIZMAN", type: "ACENTE" }, { name: "KELKİT", type: "ACENTE" },
+      { name: "MALAZGİRT", type: "ACENTE" }, { name: "OF", type: "İRTİBAT" },
+      { name: "OLTU", type: "ACENTE" }, { name: "ONDÖRTKASIM", type: "ACENTE" },
+      { name: "PALANDÖKEN", type: "İRTİBAT" }, { name: "PATNOS", type: "ACENTE" },
+      { name: "PAZAR", type: "ACENTE" }, { name: "RİZE", type: "ACENTE" },
+      { name: "SARIKAMIŞ", type: "ACENTE" }, { name: "SELİM", type: "ACENTE" },
+      { name: "SEMERCİLER", type: "ACENTE" }, { name: "SERHAT", type: "ACENTE" },
+      { name: "SÜRMENE", type: "ACENTE" }, { name: "ŞÜKRÜPAŞA", type: "ACENTE" },
+      { name: "TİREBOLU", type: "ACENTE" }, { name: "VAKFİKEBİR", type: "ACENTE" },
+      { name: "YONCALIK", type: "ACENTE" }
+    ];
+
+    const defaultTargetTemplate = { ztp: "95", tkIade: "0", indirZimmet: "0", subeYukle: "0", entegrasyon: "98", getbarcode: "99", uyum: "95", etaGonderim: "90", toplamaRingi: "90", arpAnk: "85", sevkEdilmeyen: "0" };
+
+    let globalTargetsMap = {};
+
+    window.onload = () => {
+      defaultSubeler.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+
+      if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID.includes('OPERASYONEL_')) {
+        document.getElementById('statusText').innerText = "Lütfen koda yeni JSONBin Bin ID bilginizi ekleyin!";
+        renderRegionCard();
+        renderCards(defaultSubeler);
+        return;
+      }
+      loadFromCloud();
+    };
+
+    function loadFromCloud() {
+      document.getElementById('statusText').innerText = "Buluttan veriler çekiliyor...";
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && typeof data.record === 'object') {
+          globalTargetsMap = data.record;
+          document.getElementById('statusText').innerText = "✅ Canlı Bulut Bağlantısı Aktif";
+        }
+        renderRegionCard();
+        applySearch();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Buluta bağlanılamadı!";
+        renderRegionCard();
+        applySearch();
+      });
+    }
+
+    function saveToCloud() {
+      document.getElementById('statusText').innerText = "⏳ Buluta kaydediliyor...";
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_MASTER_KEY },
+        body: JSON.stringify(globalTargetsMap)
+      })
+      .then(res => res.json())
+      .then(() => { document.getElementById('statusText').innerText = "✅ Canlı Buluta Kaydedildi"; })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Kaydedilirken hata oluştu!";
+      });
+    }
+
+    // ÇİFT % SEMBOLÜNÜ ENGELLEYEN VE TEMİZLEYEN AKILLI BİÇİMLENDİRME
+    function formatDisplayVal(valStr, isPercentage = false) {
+      if (valStr === undefined || valStr === null || valStr === "") return "0";
+      
+      let str = valStr.toString().trim();
+      // İçindeki tüm % işaretlerini ve boşlukları temizle
+      str = str.replace(/%/g, '').trim().replace('.', ',');
+      
+      // Sadece yüzde gerektiren KPI ise tek bir % ekle, değilse direkt yaz
+      return isPercentage ? `%${str}` : str;
+    }
+
+    function getSubeTarget(subeName) {
+      return (globalTargetsMap && globalTargetsMap[subeName]) ? globalTargetsMap[subeName] : defaultTargetTemplate;
+    }
+
+    function renderRegionCard() {
+      const container = document.getElementById('erzurumRegionCard');
+      const t = getSubeTarget('ERZURUM BÖLGE');
+
+      container.innerHTML = `
+        <div class="card-header">
+          <span class="card-title">📍 ERZURUM BÖLGE HEDEFLERİ</span>
+          <span class="badge badge-bolge">BÖLGE MÜDÜRLÜĞÜ</span>
+        </div>
+        <div class="kpi-grid-6">
+          <div class="kpi-target-box highlight"><span class="kpi-name">ZTP</span><span class="kpi-val">${formatDisplayVal(t.ztp, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">TK İADE</span><span class="kpi-val">${formatDisplayVal(t.tkIade, false)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">İNDİR/ZİMMET</span><span class="kpi-val">${formatDisplayVal(t.indirZimmet, false)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">ŞUBE YÜKLE</span><span class="kpi-val">${formatDisplayVal(t.subeYukle, false)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">ENTEGRASYON</span><span class="kpi-val">${formatDisplayVal(t.entegrasyon, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">GETBARCODE</span><span class="kpi-val">${formatDisplayVal(t.getbarcode, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">UYUM</span><span class="kpi-val">${formatDisplayVal(t.uyum, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">ETA GÖNDERİM</span><span class="kpi-val">${formatDisplayVal(t.etaGonderim, true)}</span></div>
+          <div class="kpi-target-box" style="background:#f0f9ff; border-color:#bae6fd;"><span class="kpi-name" style="color:#0369a1;">TOPLAMA RİNGİ</span><span class="kpi-val" style="color:#0284c7;">${formatDisplayVal(t.toplamaRingi, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">ARP MÜŞ.ANK</span><span class="kpi-val">${formatDisplayVal(t.arpAnk, true)}</span></div>
+          <div class="kpi-target-box"><span class="kpi-name">SEVK EDİLMEYEN</span><span class="kpi-val">${formatDisplayVal(t.sevkEdilmeyen, false)}</span></div>
+        </div>
+      `;
+    }
+
+    function renderCards(subeList) {
+      const container = document.getElementById('subeContainer');
+      container.innerHTML = '';
+
+      if (subeList.length === 0) {
+        container.innerHTML = '<div class="no-result">Aramanızla eşleşen şube bulunamadı.</div>';
+        return;
+      }
+
+      subeList.forEach(subeObj => {
+        const sube = subeObj.name;
+        const type = subeObj.type;
+        const t = getSubeTarget(sube);
+        const badgeClass = type === 'İRTİBAT' ? 'badge-irtibat' : 'badge-acente';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="card-title">${sube}</span>
+            <span class="badge ${badgeClass}">${type}</span>
+          </div>
+          <div class="kpi-grid-5">
+            <div class="kpi-target-box highlight"><span class="kpi-name">ZTP</span><span class="kpi-val">${formatDisplayVal(t.ztp, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">TK İADE</span><span class="kpi-val">${formatDisplayVal(t.tkIade, false)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">İNDİR/ZİMMET</span><span class="kpi-val">${formatDisplayVal(t.indirZimmet, false)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">ŞUBE YÜKLE</span><span class="kpi-val">${formatDisplayVal(t.subeYukle, false)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">ENTEGRASYON</span><span class="kpi-val">${formatDisplayVal(t.entegrasyon, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">GETBARCODE</span><span class="kpi-val">${formatDisplayVal(t.getbarcode, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">UYUM</span><span class="kpi-val">${formatDisplayVal(t.uyum, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">ETA GÖNDERİM</span><span class="kpi-val">${formatDisplayVal(t.etaGonderim, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">ARP MÜŞ.ANK</span><span class="kpi-val">${formatDisplayVal(t.arpAnk, true)}</span></div>
+            <div class="kpi-target-box"><span class="kpi-name">SEVK EDİLMEYEN</span><span class="kpi-val">${formatDisplayVal(t.sevkEdilmeyen, false)}</span></div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function applySearch() {
+      const q = document.getElementById('searchInput').value.toLocaleLowerCase('tr').trim();
+      const filtered = defaultSubeler.filter(s => s.name.toLocaleLowerCase('tr').includes(q));
+      renderCards(filtered);
+    }
+
+    function cleanStringVal(valStr) {
+      if (!valStr) return "0";
+      // Kaydederken de metin içindeki % işaretini temizleyerek kaydet
+      return valStr.toString().replace(/%/g, '').trim();
+    }
+
+    function saveAllTargets() {
+      const regionText = document.getElementById('pasteRegionTargets').value.trim();
+      const subeText = document.getElementById('pasteSubeTargets').value.trim();
+
+      let updatedCount = 0;
+
+      if (regionText) {
+        const parts = regionText.split('\t').length > 1 ? regionText.split('\t') : regionText.split(',');
+        if (parts.length >= 11) {
+          globalTargetsMap['ERZURUM BÖLGE'] = {
+            ztp: cleanStringVal(parts[0]), tkIade: cleanStringVal(parts[1]), indirZimmet: cleanStringVal(parts[2]),
+            subeYukle: cleanStringVal(parts[3]), entegrasyon: cleanStringVal(parts[4]), getbarcode: cleanStringVal(parts[5]),
+            uyum: cleanStringVal(parts[6]), etaGonderim: cleanStringVal(parts[7]), toplamaRingi: cleanStringVal(parts[8]),
+            arpAnk: cleanStringVal(parts[9]), sevkEdilmeyen: cleanStringVal(parts[10])
+          };
+          updatedCount++;
+        }
+      }
+
+      if (subeText) {
+        const lines = subeText.split('\n');
+        lines.forEach(line => {
+          const parts = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+          if (parts.length >= 2) {
+            const sube = parts[0].trim().toUpperCase();
+            if (sube && sube !== 'ERZURUM BÖLGE') {
+              globalTargetsMap[sube] = {
+                ztp: cleanStringVal(parts[1]), tkIade: cleanStringVal(parts[2]), indirZimmet: cleanStringVal(parts[3]),
+                subeYukle: cleanStringVal(parts[4]), entegrasyon: cleanStringVal(parts[5]), getbarcode: cleanStringVal(parts[6]),
+                uyum: cleanStringVal(parts[7]), etaGonderim: cleanStringVal(parts[8]), arpAnk: cleanStringVal(parts[9]),
+                sevkEdilmeyen: cleanStringVal(parts[10])
+              };
+              updatedCount++;
+            }
+          }
+        });
+      }
+
+      if (updatedCount > 0) {
+        saveToCloud();
+        renderRegionCard();
+        applySearch();
+        closeModal('importModal');
+        document.getElementById('pasteRegionTargets').value = '';
+        document.getElementById('pasteSubeTargets').value = '';
+        alert(`✅ Hedefler buluta başarıyla kaydedildi!`);
+      } else {
+        alert("Veri okunamadı. Lütfen belirtilen formatlarda verileri kopyalayıp yapıştırın.");
+      }
+    }
+
+    function openImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    window.onclick = function(e) {
+      if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bölge Operasyon Portalı</title>
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 20px 15px; }
+    .container { max-width: 1300px; margin: 0 auto; display: none; } /* Login olmadan gizli */
+
+    /* LOGIN MODAL */
+    .login-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(30, 30, 36, 0.95);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 9999;
+      padding: 15px;
+    }
+
+    .login-card {
+      background: white;
+      border-top: 6px solid var(--aras-red);
+      border-radius: 12px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    .login-card h2 { color: var(--aras-dark); margin-bottom: 6px; font-size: 1.4rem; }
+    .login-card h2 span { color: var(--aras-red); }
+    .login-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+
+    .form-group { margin-bottom: 15px; text-align: left; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--aras-dark); margin-bottom: 5px; }
+    .form-group input {
+      width: 100%; padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px; font-size: 0.95rem;
+    }
+    .form-group input:focus { outline: none; border-color: var(--aras-red); }
+
+    .btn-login {
+      width: 100%; background: var(--aras-red); color: white;
+      border: none; padding: 12px; border-radius: 6px;
+      font-weight: 800; font-size: 0.95rem; cursor: pointer;
+      margin-top: 10px; transition: background 0.2s;
+    }
+    .btn-login:hover { background: #b8030e; }
+    .error-msg { color: var(--aras-red); font-size: 0.8rem; font-weight: 700; margin-top: 10px; display: none; }
+
+    /* HEADER */
+    header {
+      background-color: var(--card-bg);
+      border-top: 6px solid var(--aras-red);
+      padding: 25px 30px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .user-info-bar {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--aras-dark);
+    }
+
+    .btn-logout {
+      background: #f1f5f9; border: 1px solid var(--border-color);
+      padding: 4px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 0.78rem; font-weight: 700; color: var(--aras-red);
+    }
+    .btn-logout:hover { background: var(--aras-red); color: white; }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--aras-dark);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    header h1 span { color: var(--aras-red); }
+
+    header p {
+      font-size: 0.95rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .live-time-bar {
+      margin-top: 12px;
+      display: inline-flex;
+      gap: 15px;
+      align-items: center;
+      background: #f8fafc;
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* İSTATİSTİK ŞERİDİ */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-box {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .stat-number { font-size: 1.8rem; font-weight: 900; color: var(--aras-red); }
+    .stat-label { font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px; }
+
+    /* PORTAL KARTLARI IZGARASI */
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 22px;
+      margin-bottom: 30px;
+    }
+
+    .portal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-top: 5px solid var(--aras-dark);
+      border-radius: 12px;
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      transition: all 0.25s ease-in-out;
+    }
+
+    .portal-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 22px rgba(227, 6, 19, 0.12);
+      border-top-color: var(--aras-red);
+    }
+
+    .portal-card.highlight-card {
+      border-top-color: var(--aras-red);
+      background: #fffcfc;
+    }
+
+    .portal-card.external-card {
+      border-top-color: #0284c7;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .portal-icon {
+      font-size: 2rem;
+      background: #f1f5f9;
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+    .portal-card:hover .portal-icon {
+      background: #fee2e2;
+    }
+
+    .portal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--aras-dark);
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    .portal-desc {
+      font-size: 0.88rem;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    .btn-enter {
+      background: var(--aras-dark);
+      color: white;
+      text-align: center;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      transition: background 0.2s;
+    }
+    .portal-card:hover .btn-enter {
+      background: var(--aras-red);
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      header { padding: 25px 15px; }
+      .user-info-bar { position: static; justify-content: center; margin-bottom: 15px; }
+      header h1 { font-size: 1.35rem; }
+      .portal-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- KULLANICI GİRİŞ EKRANI -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <h2><span>OPERASYON MERKEZİ</span> PORTAL GİRİŞ</h2>
+      <p>Operasyon Portalı</p>
+      
+      <div class="form-group">
+        <label for="username">Kullanıcı Adı:</label>
+        <input type="text" id="username" placeholder="Kullanıcı adınızı girin">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Şifre:</label>
+        <input type="password" id="password" placeholder="Şifrenizi girin">
+      </div>
+
+      <button class="btn-login" onclick="handleLogin()">Giriş Yap ➔</button>
+      <div class="error-msg" id="errorMsg">Hatalı kullanıcı adı veya şifre!</div>
+    </div>
+  </div>
+
+  <!-- PORTAL ANA SAYFASI -->
+  <div class="container" id="mainContainer">
+    <header>
+      <div class="user-info-bar">
+        <span>👤 <span id="activeUserDisplay">-</span></span>
+        <button class="btn-logout" onclick="handleLogout()">Çıkış Yap</button>
+      </div>
+
+      <h1><span></span>BÖLGE OPERASYON PORTALI</h1>
+      <p>Yönetim ve Takip Sistemi</p>
+      
+      <div class="live-time-bar">
+        <span>📅 <span id="currentDate">-</span></span>
+        <span>⏰ <span id="currentTime">-</span></span>
+        <span style="color:#16a34a;">🟢 Canlı Bağlantı</span>
+      </div>
+    </header>
+
+    <!-- ÖZET İSTATİSTİKLER -->
+    <div class="stats-strip">
+      <div class="stat-box">
+        <div class="stat-number">39</div>
+        <div class="stat-label">Şube / İrtibat</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">12</div>
+        <div class="stat-label">Bölge Müdürlüğü</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">8</div>
+        <div class="stat-label">Aktif Modül</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">%100</div>
+        <div class="stat-label">Bulut Senkronizasyonu</div>
+      </div>
+    </div>
+
+    <!-- PORTAL MODÜLLERİ -->
+    <div class="portal-grid">
+      
+      <!-- 1. Şubeler İletişim Portalı -->
+      <a href="rehber.html" class="portal-card">
+        <div class="card-top">
+          <div class="portal-icon">📞</div>
+          <div class="portal-title">Şubeler İletişim Portalı</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter">Rehbere Giriş ➔</div>
+      </a>
+
+      <!-- 2. Şube Personel portalı -->
+      <a href="personel.html" class="portal-card">
+        <div class="card-top">
+          <div class="portal-icon">👥</div>
+          <div class="portal-title">şube personel portalı</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter">Personel Modülüne Giriş ➔</div>
+      </a>
+
+      <!-- 3. Araç Takip Portalı -->
+      <a href="arac.html" class="portal-card">
+        <div class="card-top">
+          <div class="portal-icon">🚚</div>
+          <div class="portal-title">Araç Yönetim Portalı</div>
+        </div>
+        <div class="portal-desc">
+         
+        </div>
+        <div class="btn-enter">Araç Portalı ➔</div>
+      </a>
+
+      <!-- 4. Şubeler Performans Portalı -->
+      <a href="performans.html" class="portal-card highlight-card">
+        <div class="card-top">
+          <div class="portal-icon">📈</div>
+          <div class="portal-title">Şubeler Performans Portalı</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter">Şube Performansına Giriş ➔</div>
+      </a>
+
+      <!-- 5. Bölgeler Performansı -->
+      <a href="bolge-performans.html" class="portal-card highlight-card">
+        <div class="card-top">
+          <div class="portal-icon">🗺️</div>
+          <div class="portal-title">Bölgeler Performans Portalı</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter">Bölge Performansına Giriş ➔</div>
+      </a>
+
+      <!-- 6. Operasyonel Hedefler Kataloğu -->
+      <a href="operasyonel-hedefler.html" class="portal-card">
+        <div class="card-top">
+          <div class="portal-icon">📋</div>
+          <div class="portal-title">Operasyonel Hedef Kataloğu</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter">Hedef Kataloğuna Giriş ➔</div>
+      </a>
+
+      <!-- 7. ÇAĞRI MERKEZİ (DIŞ LİNK) -->
+      <a href="https://cagri.araskargo.com.tr/" target="_blank" class="portal-card external-card">
+        <div class="card-top">
+          <div class="portal-icon">🎧</div>
+          <div class="portal-title">Çağrı Merkezi Portalı</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter" style="background:#0284c7;">Arayüze Git ↗</div>
+      </a>
+
+      <!-- 8. ŞİKAYET YÖNETİMİ (DIŞ LİNK) -->
+      <a href="https://akip.cmcplanet.com/Login.aspx?ReturnUrl=%2f" target="_blank" class="portal-card external-card">
+        <div class="card-top">
+          <div class="portal-icon">📢</div>
+          <div class="portal-title">Şikayet Yönetim Portalı (AKİP)</div>
+        </div>
+        <div class="portal-desc">
+          
+        </div>
+        <div class="btn-enter" style="background:#0284c7;">Arayüze Git ↗</div>
+      </a>
+
+    </div>
+
+    <footer>
+      Aras Kargo Erzurum Bölge Müdürlüğü © <span id="year"></span>
+    </footer>
+  </div>
+
+  <script>
+    // TANIMLI KULLANICI LİSTESİ VE YETKİLERİ
+    const usersDatabase = {
+      "omerkarsli": { pass: "angel_14789", name: "Ömer Karslı", role: "ADMIN" },
+      "mustafab": { pass: "mustafab", name: "Mustafa B.", role: "USER" },
+      "zaferk": { pass: "zaferk", name: "Zafer K.", role: "USER" },
+      "canerk": { pass: "canerk", name: "Caner K.", role: "USER" },
+      "canera": { pass: "canera", name: "Caner A.", role: "USER" }
+    };
+
+    function handleLogin() {
+      const u = document.getElementById('username').value.trim().toLowerCase();
+      const p = document.getElementById('password').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+
+      if (usersDatabase[u] && usersDatabase[u].pass === p) {
+        sessionStorage.setItem('activeUser', JSON.stringify(usersDatabase[u]));
+        errorMsg.style.display = 'none';
+        checkSession();
+      } else {
+        errorMsg.style.display = 'block';
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('activeUser');
+      location.reload();
+    }
+
+    function checkSession() {
+      const activeUser = JSON.parse(sessionStorage.getItem('activeUser'));
+      if (activeUser) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainContainer').style.display = 'block';
+        document.getElementById('activeUserDisplay').innerText = `${activeUser.name} (${activeUser.role === 'ADMIN' ? 'Tam Yetkili' : 'Kullanıcı'})`;
+      } else {
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('mainContainer').style.display = 'none';
+      }
+    }
+
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('currentDate').innerText = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+      document.getElementById('currentTime').innerText = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // Enter tuşu ile hızlı giriş yapma
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && document.getElementById('loginOverlay').style.display !== 'none') {
+        handleLogin();
+      }
+    });
+
+    window.onload = () => {
+      checkSession();
+      updateTime();
+      setInterval(updateTime, 1000);
+      document.getElementById('year').innerText = new Date().getFullYear();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Araç Yönetim Portalı</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --aras-red: #e30613;
+      --aras-red-dark: #b8030e;
+      --aras-dark: #1e1e24;
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      background-color: var(--card-bg);
+      border-top: 5px solid var(--aras-red);
+      padding: 15px 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    header h1 { font-size: 1.5rem; color: var(--aras-dark); text-transform: uppercase; margin-bottom: 10px; }
+    header h1 span { color: var(--aras-red); }
+
+    .status-bar {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .controls-container { display: flex; flex-direction: column; gap: 12px; max-width: 850px; margin: 0 auto; }
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 240px; padding: 12px 18px; border: 2px solid var(--border-color); border-radius: 25px; font-size: 0.95rem; }
+    .search-input:focus { outline: none; border-color: var(--aras-red); }
+
+    .btn-action { background-color: var(--aras-dark); color: white; padding: 12px 18px; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.88rem; white-space: nowrap; }
+    .btn-action:hover { background-color: var(--aras-red); }
+
+    /* ATS Hızlı Filtre Butonları */
+    .filter-buttons { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .btn-filter { padding: 8px 14px; border: 1px solid var(--border-color); background-color: #ffffff; color: var(--aras-dark); border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-filter.active { background-color: var(--aras-red); color: white; border-color: var(--aras-red); }
+    .btn-filter:hover:not(.active) { background-color: #e2e8f0; }
+
+    /* KPI Kartları */
+    .kpi-section { margin-top: 20px; margin-bottom: 20px; }
+    .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-info { display: flex; flex-direction: column; gap: 4px; }
+    .kpi-title { font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    .kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--aras-dark); }
+    .kpi-icon { font-size: 1.8rem; opacity: 0.85; }
+
+    .kpi-ozmal { border-left: 5px solid #2563eb; }
+    .kpi-acente-kiralik { border-left: 5px solid #f97316; }
+    .kpi-irtibat-kiralik { border-left: 5px solid #a855f7; }
+    .kpi-esnaf { border-left: 5px solid var(--aras-red); }
+    .kpi-total-card { background: #1e1e24; color: white; border: 1px solid var(--aras-dark); border-left: 5px solid var(--aras-red); }
+    .kpi-total-card .kpi-title { color: #94a3b8; }
+    .kpi-total-card .kpi-value { color: #ffffff; }
+
+    /* Kart Izgarası */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+    .no-result { grid-column: 1 / -1; text-align: center; padding: 30px; font-size: 1rem; color: #777; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-top: 4px solid var(--aras-red); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card-header-area { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 6px; margin-bottom: 10px; }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--aras-dark); text-transform: uppercase; }
+    .type-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
+    .type-acente { background-color: #fdf2f2; color: var(--aras-red); border: 1px solid #f87171; }
+    .type-irtibat { background-color: #eff6ff; color: #2563eb; border: 1px solid #60a5fa; }
+    .type-direkt { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    .info-box { background-color: #fdf2f2; border-left: 3px solid var(--aras-red); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 0.88rem; color: var(--aras-dark); display: flex; flex-direction: column; gap: 4px; }
+    .button-group { display: flex; flex-direction: column; gap: 8px; }
+    .btn { border: none; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; font-size: 0.88rem; }
+    .btn-add { background-color: var(--aras-red); color: white; }
+    .btn-type { background-color: #f1f5f9; color: var(--aras-dark); border: 1px solid var(--border-color); }
+    .btn-show { background-color: #ffffff; color: var(--aras-dark); border: 1px solid var(--border-color); }
+    .btn-delete { background-color: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+    .modal-content { background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid var(--aras-red); width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
+    .modal-large { max-width: 95% !important; width: 1100px; }
+    .close-btn { position: absolute; top: 12px; right: 15px; font-size: 1.6rem; cursor: pointer; color: #888; z-index: 10; }
+    .modal-title { font-size: 1.15rem; margin-bottom: 12px; color: var(--aras-dark); border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; padding-right: 30px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.85rem; color: var(--aras-dark); }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; background-color: white; }
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+    .vehicle-list { list-style-type: none; max-height: 320px; overflow-y: auto; }
+    .vehicle-list li { padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .vehicle-details { display: flex; flex-direction: column; gap: 3px; }
+    .vehicle-plaka { font-size: 1rem; font-weight: 700; color: var(--aras-dark); }
+    .vehicle-model { font-size: 0.85rem; color: #555; }
+    .vehicle-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .tag-statu { font-size: 0.75rem; background: #fdf2f2; color: var(--aras-red); padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #f87171; }
+    .tag-ats-var { font-size: 0.75rem; background: #ecfdf5; color: #059669; padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #6ee7b7; }
+    .tag-ats-yok { font-size: 0.75rem; background: #fef2f2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #fca5a5; }
+
+    .analysis-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
+    .analysis-table th, .analysis-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.88rem; }
+    .analysis-table th { background-color: #fdf2f2; color: var(--aras-red); font-weight: 700; }
+    .analysis-table td:last-child { font-weight: 700; text-align: right; }
+    .table-section-title { font-size: 0.95rem; font-weight: bold; color: var(--aras-dark); margin-top: 15px; margin-bottom: 5px; border-left: 3px solid var(--aras-red); padding-left: 8px; }
+
+    /* Mobilde Kaydırılabilir Grafik Kapsayıcısı */
+    .chart-wrapper { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; margin-top: 15px; }
+    .chart-container { position: relative; min-width: 900px; height: 420px; }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      header h1 { font-size: 1.25rem; }
+      .search-row { flex-direction: column; }
+      .btn-action { width: 100%; border-radius: 20px; }
+      .grid-container { grid-template-columns: 1fr; }
+      .kpi-container { grid-template-columns: 1fr; }
+      .modal-content { padding: 15px; }
+      .chart-container { height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1><span>OPERASYON</span> ARAÇ YÖNETİM PORTALI</h1>
+<a href="index.html" style="text-decoration:none; color:#1e1e24; font-weight:bold; font-size:0.85rem;">🏠 Ana Menüye Dön</a>
+      <div class="status-bar" id="statusText">Bulut Veritabanına Bağlanılıyor...</div>
+    </header>
+
+    <div class="controls-container">
+      <div class="search-row">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Şube adı veya Araç Plakası yazın..." oninput="applyFilters()">
+        <button class="btn-action" onclick="openAnalysisModal()">📊 Araç Analizi Yap</button>
+        <button class="btn-action" onclick="openChartModal()">📈 Grafik Oluştur</button>
+      </div>
+
+      <!-- Hızlı ATS Filtre Butonları -->
+      <div class="filter-buttons">
+        <button class="btn-filter active" id="btnFilterAll" onclick="setAtsFilter('all')">Tüm Şubeler</button>
+        <button class="btn-filter" id="btnFilterAtsVar" onclick="setAtsFilter('var')">✅ ATS Kaydı Olanlar</button>
+        <button class="btn-filter" id="btnFilterAtsYok" onclick="setAtsFilter('yok')">❌ ATS Kaydı Olmayanlar</button>
+      </div>
+    </div>
+
+    <!-- 5 Adet Araç KPI Kartı -->
+    <div class="kpi-section">
+      <div class="kpi-container">
+        <div class="kpi-card kpi-ozmal">
+          <div class="kpi-info"><span class="kpi-title">Öz Mal Araçlar</span><span class="kpi-value" id="kpiOzmalCount">0</span></div>
+          <div class="kpi-icon">🚘</div>
+        </div>
+        <div class="kpi-card kpi-acente-kiralik">
+          <div class="kpi-info"><span class="kpi-title">Acente Kiralık</span><span class="kpi-value" id="kpiAcenteKiralikCount">0</span></div>
+          <div class="kpi-icon">📋</div>
+        </div>
+        <div class="kpi-card kpi-irtibat-kiralik">
+          <div class="kpi-info"><span class="kpi-title">İrtibat Kiralık</span><span class="kpi-value" id="kpiIrtibatKiralikCount">0</span></div>
+          <div class="kpi-icon">🏢</div>
+        </div>
+        <div class="kpi-card kpi-esnaf">
+          <div class="kpi-info"><span class="kpi-title">Esnaf Kurye</span><span class="kpi-value" id="kpiEsnafCount">0</span></div>
+          <div class="kpi-icon">🛵</div>
+        </div>
+        <div class="kpi-card kpi-total-card">
+          <div class="kpi-info"><span class="kpi-title">GENEL TOPLAM</span><span class="kpi-value" id="kpiTotalVehicles">0</span></div>
+          <div class="kpi-icon">📊</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-container" id="subeContainer"></div>
+  </div>
+
+  <!-- 1. Araç Ekle Modalı -->
+  <div class="modal" id="addVehicleModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('addVehicleModal')">&times;</span>
+      <h3 class="modal-title" id="addVehicleModalTitle">Araç Ekle</h3>
+      
+      <div class="form-group">
+        <label for="vehiclePlaka">Araç Plakası:</label>
+        <input type="text" id="vehiclePlaka" placeholder="Örn: 34 ABC 123">
+      </div>
+      <div class="form-group">
+        <label for="vehicleModel">Marka / Model:</label>
+        <input type="text" id="vehicleModel" placeholder="Örn: Ford Transit 2022">
+      </div>
+      <div class="form-group">
+        <label for="vehicleStatu">Araç Statüsü:</label>
+        <select id="vehicleStatu">
+          <option value="Öz Mal">Öz Mal</option>
+          <option value="Acente Kiralık">Acente Kiralık</option>
+          <option value="İrtibat Kiralık">İrtibat Kiralık</option>
+          <option value="Esnaf Kurye">Esnaf Kurye</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="vehicleAts">
+          <label for="vehicleAts">ATS Kaydı Var (Araç Takip Sistemi)</label>
+        </div>
+      </div>
+
+      <button class="btn btn-add" onclick="saveVehicle()" style="margin-top: 15px;">Kaydet</button>
+    </div>
+  </div>
+
+  <!-- 2. Şube Tipi Modalı -->
+  <div class="modal" id="typeModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('typeModal')">&times;</span>
+      <h3 class="modal-title" id="typeModalTitle">Şube Tipi Ayarla</h3>
+      <div class="form-group">
+        <label for="subeTipiSelect">Şube Durumu Seçin:</label>
+        <select id="subeTipiSelect">
+          <option value="Acente">Acente</option>
+          <option value="İrtibat">İrtibat</option>
+          <option value="Direkt Şube">Direkt Şube</option>
+        </select>
+      </div>
+      <button class="btn btn-add" onclick="saveSubeTipi()">Kaydet</button>
+    </div>
+  </div>
+
+  <!-- 3. Araç Listeleme Modalı -->
+  <div class="modal" id="listVehicleModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('listVehicleModal')">&times;</span>
+      <h3 class="modal-title" id="listVehicleModalTitle">Kayıtlı Araçlar</h3>
+      <ul class="vehicle-list" id="modalVehicleListesi"></ul>
+    </div>
+  </div>
+
+  <!-- 4. Araç Analiz Tablosu Modalı -->
+  <div class="modal" id="analysisModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('analysisModal')">&times;</span>
+      <h3 class="modal-title">📊 Genel Araç Analiz Raporu</h3>
+      
+      <div class="table-section-title">Araç Statü Dağılımı</div>
+      <table class="analysis-table">
+        <thead><tr><th>STATÜ</th><th style="text-align: right;">TOPLAM ARAÇ</th></tr></thead>
+        <tbody>
+          <tr><td>🚘 Öz Mal Araçlar</td><td id="countOzmal">0</td></tr>
+          <tr><td>📋 Acente Kiralık Araçlar</td><td id="countAcenteKiralik">0</td></tr>
+          <tr><td>🏢 İrtibat Kiralık Araçlar</td><td id="countIrtibatKiralik">0</td></tr>
+          <tr><td>🛵 Esnaf Kurye Araçları</td><td id="countEsnaf">0</td></tr>
+          <tr style="background:#f1f5f9; font-weight:bold;"><td>TOPLAM ARAÇ SAYISI</td><td id="countToplamArac">0</td></tr>
+        </tbody>
+      </table>
+
+      <div class="table-section-title">ATS (Araç Takip Sistemi) Durumu</div>
+      <table class="analysis-table">
+        <thead><tr><th>ATS KAYDI</th><th style="text-align: right;">ADET</th></tr></thead>
+        <tbody>
+          <tr><td>✅ ATS Kaydı Var</td><td id="countAtsVar">0</td></tr>
+          <tr><td>❌ ATS Kaydı Yok</td><td id="countAtsYok">0</td></tr>
+        </tbody>
+      </table>
+
+      <div class="table-section-title">Şube Statüsüne Göre Araç Dağılımı</div>
+      <table class="analysis-table">
+        <thead><tr><th>ŞUBE STATÜSÜ</th><th style="text-align: right;">TOPLAM ARAÇ</th></tr></thead>
+        <tbody>
+          <tr><td>🔴 Acente Şubelerdeki Araçlar</td><td id="countAcenteArac">0</td></tr>
+          <tr><td>🔵 İrtibat Şubelerdeki Araçlar</td><td id="countIrtibatArac">0</td></tr>
+          <tr><td>⚪ Direkt Şubelerdeki Araçlar</td><td id="countDirektArac">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. Grafik Modalı (Mobil Uyumlu) -->
+  <div class="modal" id="chartModal">
+    <div class="modal-content modal-large">
+      <span class="close-btn" onclick="closeModal('chartModal')">&times;</span>
+      <h3 class="modal-title">📈 Şubelere Göre Araç Statü Dağılım Grafiği</h3>
+      
+      <div class="chart-wrapper">
+        <div class="chart-container">
+          <canvas id="aracChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // ALDIĞINIZ 2 BİLGİYİ BURAYA YAPIŞTIRIN:
+    // -------------------------------------------------------------
+    const JSONBIN_BIN_ID = '6abaed27ffd5d16053395cd6';
+    const JSONBIN_MASTER_KEY = '$2a$10$tt.AspNWew11WXRrZC0KBO37XaWoZIoiEGLRUVqAu.a4qCugcEDiG';
+
+    const defaultSubeler = [
+      "BULANCAK", "GÜRCÜKAPI", "GİRESUN", "ERZİNCAN", "RİZE", "HOPA", "OF", 
+      "ÇAYELİ", "AKÇAABAT", "VAKFİKEBİR", "SERHAT", "ARTVİN", "TİREBOLU", 
+      "SARIKAMIŞ", "BAYBURT", "GÜMÜŞHANE", "SEMERCİLER", "ŞÜKRÜPAŞA", 
+      "ONDÖRTKASIM", "AĞRI", "DOĞUBEYAZIT", "ARDAHAN", "SÜRMENE", "YONCALIK", 
+      "KAĞIZMAN", "PAZAR", "AVNİAKER", "HORASAN", "PATNOS", "OLTU", 
+      "SELİM", "MALAZGİRT", "ARSİN", "KELKİT", "PALANDÖKEN", "ARDEŞEN", 
+      "HINIS", "KAFKAS", "GÖKKUŞAĞI"
+    ];
+
+    let activeSubeIndex = null;
+    let subeData = [];
+    let currentAtsFilter = 'all';
+    let myChart = null;
+
+    window.onload = () => {
+      defaultSubeler.sort((a, b) => a.localeCompare(b, 'tr'));
+
+      if (!JSONBIN_BIN_ID || JSONBIN_BIN_ID.includes('BURAYA_')) {
+        document.getElementById('statusText').innerText = "Lütfen koda JSONBin Bin ID ve Master Key bilgilerinizi ekleyin!";
+        initLocalDefault();
+        return;
+      }
+      loadFromCloud();
+    };
+
+    function initLocalDefault() {
+      subeData = defaultSubeler.map(subeAdi => ({
+        birim: subeAdi,
+        tip: 'Acente',
+        araclar: []
+      }));
+      applyFilters();
+    }
+
+    function loadFromCloud() {
+      document.getElementById('statusText').innerText = "Bulut veritabanından çekiliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && Array.isArray(data.record) && data.record.length > 0) {
+          subeData = data.record;
+          document.getElementById('statusText').innerText = "✅ Canlı Bulut Bağlantısı Aktif";
+        } else {
+          initLocalDefault();
+          saveToCloud();
+        }
+        applyFilters();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Bulut veritabanına bağlanılamadı!";
+        initLocalDefault();
+      });
+    }
+
+    function saveToCloud() {
+      document.getElementById('statusText').innerText = "⏳ Buluta kaydediliyor...";
+      
+      fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_MASTER_KEY
+        },
+        body: JSON.stringify(subeData)
+      })
+      .then(res => res.json())
+      .then(() => {
+        document.getElementById('statusText').innerText = "✅ Canlı Buluta Başarıyla Kaydedildi";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('statusText').innerText = "Kaydedilirken hata oluştu!";
+      });
+    }
+
+    function updateKpiCards() {
+      let ozmalCount = 0, acenteKiralikCount = 0, irtibatKiralikCount = 0, esnafCount = 0, totalVehicles = 0;
+
+      subeData.forEach(sube => {
+        if (sube.araclar) {
+          sube.araclar.forEach(v => {
+            totalVehicles++;
+            if (v.statu === 'Öz Mal') ozmalCount++;
+            else if (v.statu === 'Acente Kiralık') acenteKiralikCount++;
+            else if (v.statu === 'İrtibat Kiralık') irtibatKiralikCount++;
+            else if (v.statu === 'Esnaf Kurye') esnafCount++;
+          });
+        }
+      });
+
+      document.getElementById('kpiOzmalCount').innerText = ozmalCount;
+      document.getElementById('kpiAcenteKiralikCount').innerText = acenteKiralikCount;
+      document.getElementById('kpiIrtibatKiralikCount').innerText = irtibatKiralikCount;
+      document.getElementById('kpiEsnafCount').innerText = esnafCount;
+      document.getElementById('kpiTotalVehicles').innerText = totalVehicles;
+    }
+
+    function renderCards(dataToRender) {
+      const container = document.getElementById('subeContainer');
+      container.innerHTML = '';
+
+      if (dataToRender.length === 0) {
+        container.innerHTML = '<div class="no-result">Aramanız veya seçilen filtrenizle eşleşen araç / şube bulunamadı.</div>';
+        return;
+      }
+
+      dataToRender.forEach((item) => {
+        const originalIndex = subeData.findIndex(s => s.birim === item.birim);
+        const tipStr = item.tip || 'Acente';
+        const aracSayisi = item.araclar ? item.araclar.length : 0;
+
+        let badgeClass = 'type-acente';
+        if (tipStr === 'İrtibat') badgeClass = 'type-irtibat';
+        if (tipStr === 'Direkt Şube') badgeClass = 'type-direkt';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <div class="card-header-area">
+              <span class="card-title">${item.birim}</span>
+              <span class="type-badge ${badgeClass}">${tipStr}</span>
+            </div>
+            <div class="info-box">
+              <div><strong>Kayıtlı Araç Sayısı:</strong> ${aracSayisi} Araç</div>
+            </div>
+          </div>
+          <div class="button-group">
+            <button class="btn btn-add" onclick="openAddVehicleModal(${originalIndex})">➕ Araç Ekle</button>
+            <button class="btn btn-type" onclick="openTypeModal(${originalIndex})">⚙️ Şube Tipi (${tipStr})</button>
+            <button class="btn btn-show" onclick="openListVehicleModal(${originalIndex})">🚗 Araçları Göster</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function setAtsFilter(type) {
+      currentAtsFilter = type;
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      
+      if (type === 'all') document.getElementById('btnFilterAll').classList.add('active');
+      if (type === 'var') document.getElementById('btnFilterAtsVar').classList.add('active');
+      if (type === 'yok') document.getElementById('btnFilterAtsYok').classList.add('active');
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('searchInput').value.toLocaleLowerCase('tr').trim();
+
+      const filtered = subeData.filter(item => {
+        const matchesSube = item.birim.toLocaleLowerCase('tr').includes(query);
+        const matchesPlaka = item.araclar && item.araclar.some(v => 
+          v.plaka.toLocaleLowerCase('tr').includes(query)
+        );
+        const searchPass = !query || matchesSube || matchesPlaka;
+
+        let atsPass = true;
+        if (currentAtsFilter === 'var') {
+          atsPass = item.araclar && item.araclar.some(v => v.atsVar === true);
+        } else if (currentAtsFilter === 'yok') {
+          atsPass = item.araclar && item.araclar.some(v => v.atsVar === false);
+        }
+
+        return searchPass && atsPass;
+      });
+
+      updateKpiCards();
+      renderCards(filtered);
+    }
+
+    function openAddVehicleModal(index) {
+      activeSubeIndex = index;
+      document.getElementById('addVehicleModalTitle').innerText = `${subeData[index].birim} - Araç Ekle`;
+      document.getElementById('vehiclePlaka').value = '';
+      document.getElementById('vehicleModel').value = '';
+      document.getElementById('vehicleStatu').value = 'Öz Mal';
+      document.getElementById('vehicleAts').checked = false;
+      document.getElementById('addVehicleModal').style.display = 'flex';
+    }
+
+    function saveVehicle() {
+      const plaka = document.getElementById('vehiclePlaka').value.trim().toUpperCase();
+      const model = document.getElementById('vehicleModel').value.trim();
+      const statu = document.getElementById('vehicleStatu').value;
+      const atsVar = document.getElementById('vehicleAts').checked;
+
+      if (!plaka) {
+        alert("Lütfen araç plakasını girin!");
+        return;
+      }
+
+      if (!subeData[activeSubeIndex].araclar) {
+        subeData[activeSubeIndex].araclar = [];
+      }
+
+      subeData[activeSubeIndex].araclar.push({
+        plaka: plaka,
+        model: model || 'Model Belirtilmedi',
+        statu: statu,
+        atsVar: atsVar
+      });
+
+      applyFilters();
+      saveToCloud();
+      closeModal('addVehicleModal');
+    }
+
+    function openTypeModal(index) {
+      activeSubeIndex = index;
+      document.getElementById('typeModalTitle').innerText = `${subeData[index].birim} - Şube Tipi`;
+      document.getElementById('subeTipiSelect').value = subeData[index].tip || 'Acente';
+      document.getElementById('typeModal').style.display = 'flex';
+    }
+
+    function saveSubeTipi() {
+      subeData[activeSubeIndex].tip = document.getElementById('subeTipiSelect').value;
+      applyFilters();
+      saveToCloud();
+      closeModal('typeModal');
+    }
+
+    function deleteVehicle(subeIndex, vehicleIndex) {
+      if (confirm("Bu aracı silmek istediğinize emin misiniz?")) {
+        subeData[subeIndex].araclar.splice(vehicleIndex, 1);
+        applyFilters();
+        saveToCloud();
+        openListVehicleModal(subeIndex);
+      }
+    }
+
+    function openListVehicleModal(index) {
+      activeSubeIndex = index;
+      const sube = subeData[index];
+      document.getElementById('listVehicleModalTitle').innerText = `${sube.birim} - Kayıtlı Araçlar`;
+      
+      const listContainer = document.getElementById('modalVehicleListesi');
+      listContainer.innerHTML = '';
+
+      if (!sube.araclar || sube.araclar.length === 0) {
+        listContainer.innerHTML = '<li style="justify-content: center; color: #888;">Henüz kayıtlı araç yok.</li>';
+      } else {
+        sube.araclar.forEach((v, vIndex) => {
+          const atsBadge = v.atsVar 
+            ? '<span class="tag-ats-var">✅ ATS Var</span>' 
+            : '<span class="tag-ats-yok">❌ ATS Yok</span>';
+
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div class="vehicle-details">
+              <span class="vehicle-plaka">${v.plaka}</span>
+              <span class="vehicle-model">${v.model}</span>
+              <div class="vehicle-tags">
+                <span class="tag-statu">${v.statu}</span>
+                ${atsBadge}
+              </div>
+            </div>
+            <button class="btn-delete" onclick="deleteVehicle(${index}, ${vIndex})">🗑️ Sil</button>
+          `;
+          listContainer.appendChild(li);
+        });
+      }
+
+      document.getElementById('listVehicleModal').style.display = 'flex';
+    }
+
+    function openAnalysisModal() {
+      let countOzmal = 0, countAcenteKiralik = 0, countIrtibatKiralik = 0, countEsnaf = 0, countToplamArac = 0;
+      let countAtsVar = 0, countAtsYok = 0;
+      let countAcenteArac = 0, countIrtibatArac = 0, countDirektArac = 0;
+
+      subeData.forEach(sube => {
+        const subeTipi = sube.tip || 'Acente';
+        const araclar = sube.araclar || [];
+
+        araclar.forEach(v => {
+          countToplamArac++;
+          if (v.statu === 'Öz Mal') countOzmal++;
+          else if (v.statu === 'Acente Kiralık') countAcenteKiralik++;
+          else if (v.statu === 'İrtibat Kiralık') countIrtibatKiralik++;
+          else if (v.statu === 'Esnaf Kurye') countEsnaf++;
+
+          if (v.atsVar) countAtsVar++;
+          else countAtsYok++;
+
+          if (subeTipi === 'Acente') countAcenteArac++;
+          else if (subeTipi === 'İrtibat') countIrtibatArac++;
+          else if (subeTipi === 'Direkt Şube') countDirektArac++;
+        });
+      });
+
+      document.getElementById('countOzmal').innerText = countOzmal + ' Araç';
+      document.getElementById('countAcenteKiralik').innerText = countAcenteKiralik + ' Araç';
+      document.getElementById('countIrtibatKiralik').innerText = countIrtibatKiralik + ' Araç';
+      document.getElementById('countEsnaf').innerText = countEsnaf + ' Araç';
+      document.getElementById('countToplamArac').innerText = countToplamArac + ' Araç';
+
+      document.getElementById('countAtsVar').innerText = countAtsVar + ' Araç';
+      document.getElementById('countAtsYok').innerText = countAtsYok + ' Araç';
+
+      document.getElementById('countAcenteArac').innerText = countAcenteArac + ' Araç';
+      document.getElementById('countIrtibatArac').innerText = countIrtibatArac + ' Araç';
+      document.getElementById('countDirektArac').innerText = countDirektArac + ' Araç';
+
+      document.getElementById('analysisModal').style.display = 'flex';
+    }
+
+    function openChartModal() {
+      document.getElementById('chartModal').style.display = 'flex';
+
+      const labels = [], ozmalData = [], acenteKiralikData = [], irtibatKiralikData = [], esnafData = [];
+
+      subeData.forEach(sube => {
+        labels.push(sube.birim);
+        let oz = 0, ak = 0, ik = 0, es = 0;
+
+        if (sube.araclar) {
+          sube.araclar.forEach(v => {
+            if (v.statu === 'Öz Mal') oz++;
+            else if (v.statu === 'Acente Kiralık') ak++;
+            else if (v.statu === 'İrtibat Kiralık') ik++;
+            else if (v.statu === 'Esnaf Kurye') es++;
+          });
+        }
+
+        ozmalData.push(oz);
+        acenteKiralikData.push(ak);
+        irtibatKiralikData.push(ik);
+        esnafData.push(es);
+      });
+
+      const ctx = document.getElementById('aracChart').getContext('2d');
+      if (myChart) myChart.destroy();
+
+      myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Öz Mal', data: ozmalData, backgroundColor: '#2563eb' },
+            { label: 'Acente Kiralık', data: acenteKiralikData, backgroundColor: '#f97316' },
+            { label: 'İrtibat Kiralık', data: irtibatKiralikData, backgroundColor: '#a855f7' },
+            { label: 'Esnaf Kurye', data: esnafData, backgroundColor: '#e30613' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { font: { size: 10 }, autoSkip: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
